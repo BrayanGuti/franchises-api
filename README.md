@@ -14,6 +14,26 @@ Construida con Spring Boot 4 y WebFlux, con persistencia en Amazon DynamoDB.
 - Maven
 - JaCoCo para cobertura de código
 
+## Arquitectura
+
+Arquitectura limpia por capas, inspirada en el
+[Scaffold Clean Architecture de Bancolombia](https://github.com/bancolombia/scaffold-clean-architecture),
+en un solo módulo Maven:
+
+```
+com.brayangutierrez.franchisesapi
+├── domain
+│   ├── model        Entidades, gateways (interfaces de repositorio) y errores de negocio
+│   └── usecase      Casos de uso: la lógica de la aplicación
+├── infrastructure
+│   ├── drivenadapters/dynamodb     Implementación de los gateways con DynamoDB
+│   └── entrypoints/reactiveweb     Controladores REST, DTOs y manejo de errores HTTP
+└── config           Arranque: registro de casos de uso como beans
+```
+
+Las dependencias solo apuntan hacia el dominio: `domain` no conoce Spring, DynamoDB ni HTTP.
+La regla se verifica en cada build con ArchUnit (`ArchitectureTest`).
+
 ## Requisitos
 
 - JDK 21
@@ -76,3 +96,38 @@ docker compose up -d dynamodb-dev
 ```
 
 Estado de la aplicación: <http://localhost:8080/actuator/health>
+
+## Documentación de la API
+
+Con la aplicación en ejecución:
+
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
+- Especificación OpenAPI (JSON): <http://localhost:8080/v3/api-docs>
+
+## Formato de errores
+
+Todos los errores siguen el estándar [ProblemDetail (RFC 7807)](https://www.rfc-editor.org/rfc/rfc7807)
+con `Content-Type: application/problem+json`:
+
+| Código | Cuándo |
+|---|---|
+| 400 | Datos inválidos, JSON mal formado o parámetros con formato incorrecto |
+| 404 | La franquicia, sucursal, producto o ruta no existe |
+| 409 | El recurso ya existe |
+| 500 | Error inesperado (sin exponer detalles internos) |
+
+Ejemplo de error de validación:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Solicitud inválida",
+  "status": 400,
+  "detail": "La solicitud contiene datos inválidos",
+  "instance": "/api/franchises",
+  "timestamp": "2026-01-01T12:00:00Z",
+  "errors": {
+    "name": "El nombre es obligatorio"
+  }
+}
+```

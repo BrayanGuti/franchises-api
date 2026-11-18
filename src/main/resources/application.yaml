@@ -9,6 +9,13 @@ app:
     region: us-east-1
     table-name: franchises
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  show-actuator: false
+
 management:
   endpoints:
     web:

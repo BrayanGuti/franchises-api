@@ -1,4 +1,4 @@
-package com.brayangutierrez.franchisesapi.infrastructure.config;
+package com.brayangutierrez.franchisesapi.infrastructure.drivenadapters.dynamodb.config;
 
 import java.net.URI;
 

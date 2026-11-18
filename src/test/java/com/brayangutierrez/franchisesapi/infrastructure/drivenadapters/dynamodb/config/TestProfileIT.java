@@ -1,4 +1,4 @@
-package com.brayangutierrez.franchisesapi.infrastructure.config;
+package com.brayangutierrez.franchisesapi.infrastructure.drivenadapters.dynamodb.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
