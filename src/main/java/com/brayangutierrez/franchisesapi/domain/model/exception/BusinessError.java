@@ -13,7 +13,8 @@ public enum BusinessError {
 	BRANCH_NOT_FOUND(BusinessErrorType.NOT_FOUND, "La sucursal '%s' no existe"),
 	PRODUCT_NOT_FOUND(BusinessErrorType.NOT_FOUND, "El producto '%s' no existe"),
 	PRODUCT_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "El producto '%s' ya existe en la sucursal"),
-	INVALID_STOCK(BusinessErrorType.INVALID, "El stock no puede ser negativo: %s");
+	INVALID_STOCK(BusinessErrorType.INVALID, "El stock no puede ser negativo: %s"),
+	INVALID_NAME(BusinessErrorType.INVALID, "El nombre es obligatorio");
 
 	private final BusinessErrorType type;
 	private final String messageTemplate;

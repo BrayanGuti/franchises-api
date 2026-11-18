@@ -115,6 +115,20 @@ docker compose up -d dynamodb-dev
 
 Estado de la aplicación: <http://localhost:8080/actuator/health>
 
+## Endpoints
+
+| Método | Ruta | Descripción | Respuestas |
+|---|---|---|---|
+| `POST` | `/api/franchises` | Agregar una franquicia | 201, 400 |
+
+Ejemplo:
+
+```bash
+curl -X POST http://localhost:8080/api/franchises \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Cafeterias del Norte"}'
+```
+
 ## Documentación de la API
 
 Con la aplicación en ejecución:
