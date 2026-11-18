@@ -1,5 +1,8 @@
 # Franchises API
 
+[![CI](https://github.com/BrayanGuti/franchises-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BrayanGuti/franchises-api/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/BrayanGuti/franchises-api/badge.svg?branch=main)](https://coveralls.io/github/BrayanGuti/franchises-api?branch=main)
+
 API reactiva para gestionar franquicias, sus sucursales y los productos de cada sucursal.
 Construida con Spring Boot 4 y WebFlux, con persistencia en Amazon DynamoDB.
 
@@ -56,6 +59,12 @@ El comando ejecuta:
 - Pruebas de integración (`*IT`) con Failsafe.
 - Reporte de cobertura unificado en `target/site/jacoco/index.html`.
 - Verificación de cobertura mínima del 80 %: si no se cumple, el build falla.
+
+## Integración continua
+
+Cada push y pull request a `main` ejecuta [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+levanta `dynamodb-test`, corre `./mvnw verify` (pruebas y umbral de cobertura del 80 %),
+publica los reportes como artefacto y envía la cobertura a Coveralls.
 
 ## Ejecutar la aplicación
 
