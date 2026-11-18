@@ -8,6 +8,7 @@ app:
   dynamodb:
     region: us-east-1
     table-name: franchises
+    create-table: false
 
 springdoc:
   api-docs:

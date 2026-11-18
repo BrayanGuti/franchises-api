@@ -34,6 +34,24 @@ com.brayangutierrez.franchisesapi
 Las dependencias solo apuntan hacia el dominio: `domain` no conoce Spring, DynamoDB ni HTTP.
 La regla se verifica en cada build con ArchUnit (`ArchitectureTest`).
 
+## Modelo de datos
+
+Una sola tabla de DynamoDB (`franchises`, modo on-demand) con clave compuesta `PK` + `SK`.
+Toda la información de una franquicia comparte la misma `PK`, así que una sola consulta
+trae sus sucursales y productos:
+
+| Entidad | PK | SK | Atributos |
+|---|---|---|---|
+| Franquicia | `F#{franchiseId}` | `META` | `name` |
+| Sucursal | `F#{franchiseId}` | `B#{branchId}` | `name` |
+| Producto | `F#{franchiseId}` | `B#{branchId}#P#{productId}` | `name`, `stock` |
+
+Los productos son ítems independientes, no una lista dentro de la sucursal: así cada producto
+se modifica sin reescribir la sucursal y no hay riesgo de llegar al límite de 400 KB por ítem.
+
+En los perfiles `dev` y `test` la aplicación crea la tabla al arrancar si no existe.
+En AWS la tabla la crea Terraform.
+
 ## Requisitos
 
 - JDK 21

@@ -2,3 +2,4 @@
 app:
   dynamodb:
     endpoint: http://localhost:8001
+    create-table: true

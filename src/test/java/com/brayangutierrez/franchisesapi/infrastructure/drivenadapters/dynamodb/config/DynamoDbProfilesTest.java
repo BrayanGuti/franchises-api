@@ -29,6 +29,7 @@ class DynamoDbProfilesTest {
 		assertThat(properties.endpoint()).isEqualTo(URI.create("http://localhost:8000"));
 		assertThat(properties.region()).isEqualTo("us-east-1");
 		assertThat(properties.tableName()).isEqualTo("franchises");
+		assertThat(properties.createTable()).isTrue();
 	}
 
 	@Test
@@ -38,15 +39,17 @@ class DynamoDbProfilesTest {
 		assertThat(properties.endpoint()).isEqualTo(URI.create("http://localhost:8001"));
 		assertThat(properties.region()).isEqualTo("us-east-1");
 		assertThat(properties.tableName()).isEqualTo("franchises");
+		assertThat(properties.createTable()).isTrue();
 	}
 
 	@Test
-	void baseConfigurationHasNoEndpoint() throws IOException {
+	void baseConfigurationTargetsAwsWithoutCreatingTable() throws IOException {
 		StandardEnvironment environment = environmentWith("application.yaml");
 
 		DynamoDbProperties properties = bind(environment);
 
 		assertThat(properties.endpoint()).isNull();
+		assertThat(properties.createTable()).isFalse();
 	}
 
 	private DynamoDbProperties bindWithProfile(String profile) throws IOException {
