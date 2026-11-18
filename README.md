@@ -149,6 +149,7 @@ docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + 
 | `POST` | `/api/franchises` | Agregar una franquicia | 201, 400 |
 | `POST` | `/api/franchises/{franchiseId}/branches` | Agregar una sucursal a una franquicia | 201, 400, 404 |
 | `POST` | `/api/franchises/{franchiseId}/branches/{branchId}/products` | Agregar un producto a una sucursal | 201, 400, 404, 409 |
+| `DELETE` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}` | Eliminar un producto de una sucursal | 204, 400, 404, 409 |
 
 - Los identificadores son UUID generados por el sistema; un ID con otro formato responde 400.
 - El nombre de un producto es único dentro de su sucursal, sin distinguir mayúsculas, tildes ni
@@ -178,7 +179,7 @@ con `Content-Type: application/problem+json`:
 |---|---|
 | 400 | Datos inválidos, JSON mal formado o parámetros con formato incorrecto |
 | 404 | La franquicia, sucursal, producto o ruta no existe |
-| 409 | El recurso ya existe |
+| 409 | El recurso ya existe, o cambió mientras se procesaba la operación (se puede reintentar) |
 | 500 | Error inesperado (sin exponer detalles internos) |
 
 Ejemplo de error de validación:

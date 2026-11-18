@@ -11,6 +11,7 @@ enum TestError implements BusinessErrorCode {
 
 	RESOURCE_NOT_FOUND(BusinessErrorType.NOT_FOUND, "La franquicia '%s' no existe"),
 	RESOURCE_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "El producto '%s' ya existe en la sucursal"),
+	CONCURRENT_CHANGE(BusinessErrorType.CONFLICT, "El producto '%s' cambió mientras se procesaba la solicitud"),
 	INVALID_VALUE(BusinessErrorType.INVALID, "El stock no puede ser negativo: %s");
 
 	private final BusinessErrorType type;

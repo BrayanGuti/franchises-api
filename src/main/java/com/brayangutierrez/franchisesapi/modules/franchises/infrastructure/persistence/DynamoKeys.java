@@ -64,6 +64,14 @@ public final class DynamoKeys {
 		return key(franchisePk(franchiseId), branchSk(branchId));
 	}
 
+	public static Key productKey(String franchiseId, String branchId, String productId) {
+		return key(franchisePk(franchiseId), productSk(branchId, productId));
+	}
+
+	public static Key productNameKey(String franchiseId, String branchId, String productName) {
+		return key(franchisePk(franchiseId), productNameSk(branchId, productName));
+	}
+
 	public static Key key(String pk, String sk) {
 		return Key.builder().partitionValue(pk).sortValue(sk).build();
 	}

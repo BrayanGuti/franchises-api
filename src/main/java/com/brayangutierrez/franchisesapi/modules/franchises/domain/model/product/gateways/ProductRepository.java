@@ -17,4 +17,10 @@ public interface ProductRepository {
 	 */
 	Mono<Product> save(Product product);
 
+	/**
+	 * Elimina un producto y libera su nombre, de forma atómica. Falla con
+	 * {@code PRODUCT_NOT_FOUND} si el producto no existe en esa sucursal.
+	 */
+	Mono<Void> delete(String franchiseId, String branchId, String productId);
+
 }

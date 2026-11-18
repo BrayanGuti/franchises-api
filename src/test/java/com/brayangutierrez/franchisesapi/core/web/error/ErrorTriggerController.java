@@ -48,6 +48,11 @@ class ErrorTriggerController {
 		return Mono.error(new BusinessException(TestError.RESOURCE_ALREADY_EXISTS, "p-1"));
 	}
 
+	@GetMapping("/concurrent")
+	Mono<String> concurrent() {
+		return Mono.error(new BusinessException(TestError.CONCURRENT_CHANGE, "p-1"));
+	}
+
 	@GetMapping("/invalid")
 	Mono<String> invalid() {
 		return Mono.error(new BusinessException(TestError.INVALID_VALUE, -1));

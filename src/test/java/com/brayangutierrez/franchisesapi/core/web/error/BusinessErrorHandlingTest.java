@@ -37,6 +37,16 @@ class BusinessErrorHandlingTest {
 	}
 
 	@Test
+	void concurrentChangeReturns409WithItsOwnTitle() {
+		client.get().uri("/test/concurrent").exchange()
+				.expectStatus().isEqualTo(HttpStatus.CONFLICT)
+				.expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+				.expectBody()
+				.jsonPath("$.title").isEqualTo("Conflicto de concurrencia")
+				.jsonPath("$.detail").isEqualTo("El producto 'p-1' cambió mientras se procesaba la solicitud");
+	}
+
+	@Test
 	void invalidBusinessRuleReturns400ProblemDetail() {
 		client.get().uri("/test/invalid").exchange()
 				.expectStatus().isBadRequest()

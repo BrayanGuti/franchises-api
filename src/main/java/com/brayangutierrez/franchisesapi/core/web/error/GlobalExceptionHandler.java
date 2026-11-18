@@ -50,6 +50,7 @@ public class GlobalExceptionHandler {
 		return switch (ex.error().type()) {
 			case NOT_FOUND -> problem(HttpStatus.NOT_FOUND, NOT_FOUND_TITLE, ex.getMessage(), exchange);
 			case ALREADY_EXISTS -> problem(HttpStatus.CONFLICT, "Recurso duplicado", ex.getMessage(), exchange);
+			case CONFLICT -> problem(HttpStatus.CONFLICT, "Conflicto de concurrencia", ex.getMessage(), exchange);
 			case INVALID -> problem(HttpStatus.BAD_REQUEST, VALIDATION_TITLE, ex.getMessage(), exchange);
 		};
 	}
