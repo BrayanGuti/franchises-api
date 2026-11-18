@@ -16,23 +16,36 @@ Construida con Spring Boot 4 y WebFlux, con persistencia en Amazon DynamoDB.
 
 ## Arquitectura
 
-Arquitectura limpia por capas, inspirada en el
+Arquitectura limpia inspirada en el
 [Scaffold Clean Architecture de Bancolombia](https://github.com/bancolombia/scaffold-clean-architecture),
-en un solo módulo Maven:
+en un solo módulo Maven. El primer nivel separa por tipo de responsabilidad, para que el negocio
+nunca se mezcle con la tecnología:
 
 ```
 com.brayangutierrez.franchisesapi
-├── domain
-│   ├── model        Entidades, gateways (interfaces de repositorio) y errores de negocio
-│   └── usecase      Casos de uso: la lógica de la aplicación
-├── infrastructure
-│   ├── drivenadapters/dynamodb     Implementación de los gateways con DynamoDB
-│   └── entrypoints/reactiveweb     Controladores REST, DTOs y manejo de errores HTTP
-└── config           Arranque: registro de casos de uso como beans
+├── app                  Arranque y composición (registro de casos de uso como beans)
+├── core                 Transversal y técnico, sin negocio
+│   ├── domain           Mecanismo de errores de negocio (BusinessException, BusinessErrorCode)
+│   ├── web              Manejo de errores HTTP (ProblemDetail) y validaciones comunes
+│   └── config           Swagger / OpenAPI
+├── integrations         Tecnología externa, sin negocio
+│   └── dynamodb         Cliente, creación de tabla y piezas comunes de persistencia
+└── modules              Negocio
+    └── franchises       Franquicias, sucursales y productos
+        ├── domain
+        │   ├── model    Entidades, gateways (interfaces de repositorio) y catálogo de errores
+        │   └── usecase  Un caso de uso por acción
+        └── infrastructure
+            ├── persistence  Implementación de los gateways sobre DynamoDB
+            └── web          Un controlador por acción, con sus DTOs
 ```
 
-Las dependencias solo apuntan hacia el dominio: `domain` no conoce Spring, DynamoDB ni HTTP.
-La regla se verifica en cada build con ArchUnit (`ArchitectureTest`).
+Reglas verificadas en cada build con ArchUnit (`ArchitectureTest`):
+
+- El dominio de un módulo solo conoce Java, Reactor y el dominio de `core`: nada de Spring, AWS ni HTTP.
+- `core` e `integrations` no conocen ningún módulo de negocio.
+- La capa web de un módulo no usa su persistencia directamente: siempre pasa por los casos de uso.
+- Los módulos no dependen entre sí y nadie depende de `app`.
 
 ## Modelo de datos
 

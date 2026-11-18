@@ -2,6 +2,7 @@ package com.brayangutierrez.franchisesapi;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -9,53 +10,97 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
 /**
- * Hace cumplir la regla de dependencia de la arquitectura limpia: las dependencias
- * solo apuntan hacia el dominio. Si una clase rompe la regla, el build falla.
+ * Hace cumplir la organización del proyecto. Si una clase rompe una regla, el build falla.
+ * <ul>
+ * <li>{@code app}: arranque y composición; nadie depende de él.</li>
+ * <li>{@code core}: transversal y técnico, sin negocio.</li>
+ * <li>{@code integrations}: tecnología externa, sin negocio.</li>
+ * <li>{@code modules}: negocio; su dominio solo conoce Java, Reactor y el dominio de {@code core}.</li>
+ * </ul>
  */
-@AnalyzeClasses(packages = "com.brayangutierrez.franchisesapi", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = ArchitectureTest.BASE, importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
-	private static final String DOMAIN = "..domain..";
-	private static final String MODEL = "..domain.model..";
-	private static final String USECASE = "..domain.usecase..";
-	private static final String INFRASTRUCTURE = "..infrastructure..";
-	private static final String DRIVEN_ADAPTERS = "..infrastructure.drivenadapters..";
-	private static final String ENTRY_POINTS = "..infrastructure.entrypoints..";
+	static final String BASE = "com.brayangutierrez.franchisesapi";
+
+	private static final String APP = BASE + ".app..";
+	private static final String CORE = BASE + ".core..";
+	private static final String CORE_DOMAIN = BASE + ".core.domain..";
+	private static final String INTEGRATIONS = BASE + ".integrations..";
+	private static final String MODULES = BASE + ".modules..";
+	private static final String MODULE_DOMAIN = BASE + ".modules.*.domain..";
+	private static final String MODULE_MODEL = BASE + ".modules.*.domain.model..";
+	private static final String MODULE_USECASE = BASE + ".modules.*.domain.usecase..";
+	private static final String MODULE_WEB = BASE + ".modules.*.infrastructure.web..";
+	private static final String MODULE_PERSISTENCE = BASE + ".modules.*.infrastructure.persistence..";
+
+	private static final String[] PLAIN_JAVA_AND_REACTOR = { "java..", "reactor..", "org.reactivestreams.." };
 
 	@ArchTest
-	static final ArchRule domainOnlyUsesJavaAndReactor = classes()
-			.that().resideInAPackage(DOMAIN)
+	static final ArchRule moduleDomainOnlyUsesJavaReactorAndCoreDomain = classes()
+			.that().resideInAPackage(MODULE_DOMAIN)
 			.should().onlyDependOnClassesThat()
-			.resideInAnyPackage(DOMAIN, "java..", "reactor..", "org.reactivestreams..")
-			.as("El dominio solo puede depender de Java, Reactor y del propio dominio")
+			.resideInAnyPackage(concat(PLAIN_JAVA_AND_REACTOR, MODULE_DOMAIN, CORE_DOMAIN))
+			.as("El dominio de un módulo solo puede depender de Java, Reactor y el dominio de core")
 			.allowEmptyShould(true);
 
 	@ArchTest
+	static final ArchRule coreDomainIsPlainJava = classes()
+			.that().resideInAPackage(CORE_DOMAIN)
+			.should().onlyDependOnClassesThat()
+			.resideInAnyPackage(concat(PLAIN_JAVA_AND_REACTOR, CORE_DOMAIN))
+			.as("El dominio de core solo puede depender de Java y Reactor");
+
+	@ArchTest
 	static final ArchRule modelDoesNotDependOnUseCases = noClasses()
-			.that().resideInAPackage(MODEL)
-			.should().dependOnClassesThat().resideInAPackage(USECASE)
+			.that().resideInAPackage(MODULE_MODEL)
+			.should().dependOnClassesThat().resideInAPackage(MODULE_USECASE)
 			.as("El modelo no puede depender de los casos de uso")
 			.allowEmptyShould(true);
 
 	@ArchTest
-	static final ArchRule domainDoesNotDependOnInfrastructure = noClasses()
-			.that().resideInAPackage(DOMAIN)
-			.should().dependOnClassesThat().resideInAPackage(INFRASTRUCTURE)
-			.as("El dominio no puede depender de la infraestructura")
+	static final ArchRule coreDoesNotDependOnModules = noClasses()
+			.that().resideInAPackage(CORE)
+			.should().dependOnClassesThat().resideInAPackage(MODULES)
+			.as("Core es transversal: no puede conocer ningún módulo de negocio");
+
+	@ArchTest
+	static final ArchRule integrationsDoNotDependOnModules = noClasses()
+			.that().resideInAPackage(INTEGRATIONS)
+			.should().dependOnClassesThat().resideInAPackage(MODULES)
+			.as("Las integraciones no pueden conocer ningún módulo de negocio");
+
+	@ArchTest
+	static final ArchRule webDoesNotDependOnPersistence = noClasses()
+			.that().resideInAPackage(MODULE_WEB)
+			.should().dependOnClassesThat().resideInAPackage(MODULE_PERSISTENCE)
+			.as("La capa web de un módulo no puede saltarse los casos de uso y usar la persistencia")
 			.allowEmptyShould(true);
 
 	@ArchTest
-	static final ArchRule drivenAdaptersDoNotDependOnEntryPoints = noClasses()
-			.that().resideInAPackage(DRIVEN_ADAPTERS)
-			.should().dependOnClassesThat().resideInAPackage(ENTRY_POINTS)
-			.as("Los driven adapters no pueden depender de los entry points")
+	static final ArchRule persistenceDoesNotDependOnWeb = noClasses()
+			.that().resideInAPackage(MODULE_PERSISTENCE)
+			.should().dependOnClassesThat().resideInAPackage(MODULE_WEB)
+			.as("La persistencia de un módulo no puede depender de su capa web")
 			.allowEmptyShould(true);
 
 	@ArchTest
-	static final ArchRule entryPointsDoNotDependOnDrivenAdapters = noClasses()
-			.that().resideInAPackage(ENTRY_POINTS)
-			.should().dependOnClassesThat().resideInAPackage(DRIVEN_ADAPTERS)
-			.as("Los entry points no pueden depender de los driven adapters")
-			.allowEmptyShould(true);
+	static final ArchRule nobodyDependsOnApp = noClasses()
+			.that().resideOutsideOfPackage(APP)
+			.should().dependOnClassesThat().resideInAPackage(APP)
+			.as("app es la raíz de composición: ninguna otra capa puede depender de él");
+
+	@ArchTest
+	static final ArchRule modulesAreIndependent = slices()
+			.matching(BASE + ".modules.(*)..")
+			.should().notDependOnEachOther()
+			.as("Los módulos de negocio no pueden depender entre sí");
+
+	private static String[] concat(String[] base, String... extra) {
+		String[] all = new String[base.length + extra.length];
+		System.arraycopy(base, 0, all, 0, base.length);
+		System.arraycopy(extra, 0, all, base.length, extra.length);
+		return all;
+	}
 
 }
