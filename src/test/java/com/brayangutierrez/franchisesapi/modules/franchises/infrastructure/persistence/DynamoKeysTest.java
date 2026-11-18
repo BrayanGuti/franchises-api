@@ -41,6 +41,24 @@ class DynamoKeysTest {
 	void idsAreExtractedFromTheirKeys() {
 		assertThat(DynamoKeys.franchiseIdFrom("F#9a7e")).isEqualTo("9a7e");
 		assertThat(DynamoKeys.branchIdFrom("B#4c1d")).isEqualTo("4c1d");
+		assertThat(DynamoKeys.branchIdFromProductSk("B#4c1d#P#77ab")).isEqualTo("4c1d");
+		assertThat(DynamoKeys.productIdFrom("B#4c1d#P#77ab")).isEqualTo("77ab");
+	}
+
+	@Test
+	void equivalentProductNamesShareTheSameReservation() {
+		String reservation = DynamoKeys.productNameSk("b1", "Café Americano");
+
+		assertThat(reservation).isEqualTo("B#b1#NAME#cafe americano");
+		assertThat(DynamoKeys.productNameSk("b1", "  CAFE   americano ")).isEqualTo(reservation);
+		assertThat(DynamoKeys.productNameSk("b1", "café\tAMERICANO")).isEqualTo(reservation);
+	}
+
+	@Test
+	void differentNamesOrBranchesUseDifferentReservations() {
+		assertThat(DynamoKeys.productNameSk("b1", "Café"))
+				.isNotEqualTo(DynamoKeys.productNameSk("b1", "Té"))
+				.isNotEqualTo(DynamoKeys.productNameSk("b2", "Café"));
 	}
 
 }

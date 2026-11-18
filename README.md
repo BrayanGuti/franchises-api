@@ -58,9 +58,15 @@ trae sus sucursales y productos:
 | Franquicia | `F#{franchiseId}` | `META` | `name` |
 | Sucursal | `F#{franchiseId}` | `B#{branchId}` | `name` |
 | Producto | `F#{franchiseId}` | `B#{branchId}#P#{productId}` | `name`, `stock` |
+| Reserva de nombre | `F#{franchiseId}` | `B#{branchId}#NAME#{nombre normalizado}` | `productId` |
 
 Los productos son ítems independientes, no una lista dentro de la sucursal: así cada producto
 se modifica sin reescribir la sucursal y no hay riesgo de llegar al límite de 400 KB por ítem.
+
+DynamoDB no tiene restricciones de unicidad. Para que una sucursal no tenga dos productos con el
+mismo nombre, cada producto tiene una **reserva de nombre**: se crea en la misma transacción que el
+producto con `attribute_not_exists`, así que si dos peticiones intentan el mismo nombre a la vez
+solo una gana y la otra recibe 409.
 
 En los perfiles `dev` y `test` la aplicación crea la tabla al arrancar si no existe.
 En AWS la tabla la crea Terraform.
@@ -142,8 +148,11 @@ docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + 
 |---|---|---|---|
 | `POST` | `/api/franchises` | Agregar una franquicia | 201, 400 |
 | `POST` | `/api/franchises/{franchiseId}/branches` | Agregar una sucursal a una franquicia | 201, 400, 404 |
+| `POST` | `/api/franchises/{franchiseId}/branches/{branchId}/products` | Agregar un producto a una sucursal | 201, 400, 404, 409 |
 
-Los identificadores son UUID generados por el sistema; un ID con otro formato responde 400.
+- Los identificadores son UUID generados por el sistema; un ID con otro formato responde 400.
+- El nombre de un producto es único dentro de su sucursal, sin distinguir mayúsculas, tildes ni
+  espacios sobrantes: "Café", "cafe" y "  CAFÉ " se consideran el mismo producto (409).
 
 Ejemplo:
 
