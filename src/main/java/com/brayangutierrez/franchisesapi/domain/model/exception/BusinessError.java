@@ -11,6 +11,7 @@ public enum BusinessError {
 	FRANCHISE_NOT_FOUND(BusinessErrorType.NOT_FOUND, "La franquicia '%s' no existe"),
 	FRANCHISE_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "La franquicia '%s' ya existe"),
 	BRANCH_NOT_FOUND(BusinessErrorType.NOT_FOUND, "La sucursal '%s' no existe"),
+	BRANCH_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "La sucursal '%s' ya existe"),
 	PRODUCT_NOT_FOUND(BusinessErrorType.NOT_FOUND, "El producto '%s' no existe"),
 	PRODUCT_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "El producto '%s' ya existe en la sucursal"),
 	INVALID_STOCK(BusinessErrorType.INVALID, "El stock no puede ser negativo: %s"),

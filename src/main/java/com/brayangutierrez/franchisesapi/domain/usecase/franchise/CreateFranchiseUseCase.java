@@ -2,10 +2,9 @@ package com.brayangutierrez.franchisesapi.domain.usecase.franchise;
 
 import java.util.UUID;
 
-import com.brayangutierrez.franchisesapi.domain.model.exception.BusinessError;
-import com.brayangutierrez.franchisesapi.domain.model.exception.BusinessException;
 import com.brayangutierrez.franchisesapi.domain.model.franchise.Franchise;
 import com.brayangutierrez.franchisesapi.domain.model.franchise.gateways.FranchiseRepository;
+import com.brayangutierrez.franchisesapi.domain.usecase.common.NameRules;
 
 import reactor.core.publisher.Mono;
 
@@ -24,10 +23,7 @@ public class CreateFranchiseUseCase {
 	}
 
 	public Mono<Franchise> execute(String name) {
-		return Mono.justOrEmpty(name)
-				.map(String::strip)
-				.filter(stripped -> !stripped.isEmpty())
-				.switchIfEmpty(Mono.error(() -> new BusinessException(BusinessError.INVALID_NAME)))
+		return NameRules.normalize(name)
 				.map(validName -> new Franchise(UUID.randomUUID().toString(), validName))
 				.flatMap(franchiseRepository::save);
 	}

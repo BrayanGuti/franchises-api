@@ -3,6 +3,7 @@ package com.brayangutierrez.franchisesapi.infrastructure.entrypoints.reactiveweb
 import java.net.URI;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterErrors;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
@@ -58,33 +60,33 @@ public class GlobalExceptionHandler {
 	 */
 	@ExceptionHandler(WebExchangeBindException.class)
 	public ProblemDetail handleBodyValidation(WebExchangeBindException ex, ServerWebExchange exchange) {
-		Map<String, String> errors = ex.getFieldErrors().stream()
-				.collect(Collectors.toMap(
-						FieldError::getField,
-						error -> messageOf(error),
-						(first, second) -> first,
-						LinkedHashMap::new));
-		ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, VALIDATION_TITLE, VALIDATION_DETAIL, exchange);
-		problem.setProperty("errors", errors);
-		return problem;
+		Map<String, String> errors = new LinkedHashMap<>();
+		addFieldErrors(errors, ex.getFieldErrors());
+		return validationProblem(errors, exchange);
 	}
 
 	/**
-	 * Parámetros de ruta o de consulta que no cumplen sus restricciones (por
-	 * ejemplo, un ID inválido).
+	 * Parámetros que no cumplen sus restricciones (por ejemplo, un ID inválido en la ruta).
+	 * Cuando un método tiene restricciones en sus parámetros, Spring valida también el cuerpo por
+	 * esta vía: sus errores llegan como {@link ParameterErrors} y se reportan por campo, igual
+	 * que en {@link #handleBodyValidation}.
 	 */
 	@ExceptionHandler(HandlerMethodValidationException.class)
 	public ProblemDetail handleParameterValidation(HandlerMethodValidationException ex, ServerWebExchange exchange) {
 		Map<String, String> errors = new LinkedHashMap<>();
-		ex.getParameterValidationResults().forEach(result -> errors.merge(
-				Objects.requireNonNullElse(result.getMethodParameter().getParameterName(), "parametro"),
-				result.getResolvableErrors().stream()
-						.map(GlobalExceptionHandler::messageOf)
-						.collect(Collectors.joining("; ")),
-				(first, second) -> first + "; " + second));
-		ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, VALIDATION_TITLE, VALIDATION_DETAIL, exchange);
-		problem.setProperty("errors", errors);
-		return problem;
+		ex.getParameterValidationResults().forEach(result -> {
+			if (result instanceof ParameterErrors bodyErrors) {
+				addFieldErrors(errors, bodyErrors.getFieldErrors());
+			} else {
+				errors.merge(
+						Objects.requireNonNullElse(result.getMethodParameter().getParameterName(), "parametro"),
+						result.getResolvableErrors().stream()
+								.map(GlobalExceptionHandler::messageOf)
+								.collect(Collectors.joining("; ")),
+						(first, second) -> first + "; " + second);
+			}
+		});
+		return validationProblem(errors, exchange);
 	}
 
 	/** JSON mal formado, tipos incorrectos o parámetros obligatorios ausentes. */
@@ -121,6 +123,17 @@ public class GlobalExceptionHandler {
 		problem.setInstance(URI.create(exchange.getRequest().getPath().value()));
 		problem.setProperty("timestamp", Instant.now());
 		return problem;
+	}
+
+	private static ProblemDetail validationProblem(Map<String, String> errors, ServerWebExchange exchange) {
+		ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, VALIDATION_TITLE, VALIDATION_DETAIL, exchange);
+		problem.setProperty("errors", errors);
+		return problem;
+	}
+
+	/** Un mensaje por campo; si un campo tiene varios errores, se conserva el primero. */
+	private static void addFieldErrors(Map<String, String> errors, List<FieldError> fieldErrors) {
+		fieldErrors.forEach(error -> errors.putIfAbsent(error.getField(), messageOf(error)));
 	}
 
 	private static String messageOf(MessageSourceResolvable error) {

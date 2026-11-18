@@ -120,6 +120,9 @@ Estado de la aplicación: <http://localhost:8080/actuator/health>
 | Método | Ruta | Descripción | Respuestas |
 |---|---|---|---|
 | `POST` | `/api/franchises` | Agregar una franquicia | 201, 400 |
+| `POST` | `/api/franchises/{franchiseId}/branches` | Agregar una sucursal a una franquicia | 201, 400, 404 |
+
+Los identificadores son UUID generados por el sistema; un ID con otro formato responde 400.
 
 Ejemplo:
 

@@ -1,0 +1,25 @@
+package com.brayangutierrez.franchisesapi.infrastructure.drivenadapters.dynamodb.branch;
+
+import com.brayangutierrez.franchisesapi.infrastructure.drivenadapters.dynamodb.BaseItem;
+
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+
+/**
+ * Ítem de sucursal en la tabla única: {@code PK=F#{franchiseId}}, {@code SK=B#{branchId}}.
+ */
+@DynamoDbBean
+public class BranchItem extends BaseItem {
+
+	public static final String ENTITY_TYPE = "BRANCH";
+
+	private String name;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+}

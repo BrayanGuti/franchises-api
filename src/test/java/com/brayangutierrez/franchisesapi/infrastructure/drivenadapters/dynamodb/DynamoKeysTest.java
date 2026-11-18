@@ -30,8 +30,17 @@ class DynamoKeysTest {
 	}
 
 	@Test
-	void franchiseIdIsExtractedFromPartitionKey() {
+	void branchKeyLivesInsideTheFranchisePartition() {
+		Key key = DynamoKeys.branchKey("f1", "b1");
+
+		assertThat(key.partitionKeyValue().s()).isEqualTo("F#f1");
+		assertThat(key.sortKeyValue()).hasValueSatisfying(sk -> assertThat(sk.s()).isEqualTo("B#b1"));
+	}
+
+	@Test
+	void idsAreExtractedFromTheirKeys() {
 		assertThat(DynamoKeys.franchiseIdFrom("F#9a7e")).isEqualTo("9a7e");
+		assertThat(DynamoKeys.branchIdFrom("B#4c1d")).isEqualTo("4c1d");
 	}
 
 }

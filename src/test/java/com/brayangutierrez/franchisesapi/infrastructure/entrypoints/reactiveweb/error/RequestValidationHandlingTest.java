@@ -46,6 +46,31 @@ class RequestValidationHandlingTest {
 	}
 
 	@Test
+	void invalidBodyNextToAValidPathVariableIsReportedByField() {
+		client.post().uri("/test/items/abc-1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.bodyValue("{\"name\":\"\",\"stock\":3}")
+				.exchange()
+				.expectStatus().isBadRequest()
+				.expectBody()
+				.jsonPath("$.errors.name").isEqualTo("El nombre es obligatorio")
+				.jsonPath("$.errors.payload").doesNotExist();
+	}
+
+	@Test
+	void invalidPathVariableAndBodyAreReportedTogether() {
+		client.post().uri("/test/items/ID_INVALIDO!")
+				.contentType(MediaType.APPLICATION_JSON)
+				.bodyValue("{\"name\":\"\",\"stock\":-1}")
+				.exchange()
+				.expectStatus().isBadRequest()
+				.expectBody()
+				.jsonPath("$.errors.id").isEqualTo("El identificador no es válido")
+				.jsonPath("$.errors.name").isEqualTo("El nombre es obligatorio")
+				.jsonPath("$.errors.stock").isEqualTo("El stock no puede ser negativo");
+	}
+
+	@Test
 	void malformedJsonReturns400() {
 		client.post().uri("/test/body")
 				.contentType(MediaType.APPLICATION_JSON)

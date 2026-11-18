@@ -40,6 +40,10 @@ public final class DynamoKeys {
 		return key(franchisePk(franchiseId), FRANCHISE_SK);
 	}
 
+	public static Key branchKey(String franchiseId, String branchId) {
+		return key(franchisePk(franchiseId), branchSk(branchId));
+	}
+
 	public static Key key(String pk, String sk) {
 		return Key.builder().partitionValue(pk).sortValue(sk).build();
 	}
@@ -47,6 +51,11 @@ public final class DynamoKeys {
 	/** Extrae el ID quitando el prefijo de la clave, por ejemplo {@code F#123 -> 123}. */
 	public static String franchiseIdFrom(String pk) {
 		return pk.substring(FRANCHISE_PREFIX.length());
+	}
+
+	/** Extrae el ID de sucursal de su sort key: {@code B#456 -> 456}. */
+	public static String branchIdFrom(String sk) {
+		return sk.substring(BRANCH_PREFIX.length());
 	}
 
 }

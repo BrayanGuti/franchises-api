@@ -65,6 +65,14 @@ class ErrorTriggerController {
 		return Mono.just(id);
 	}
 
+	/** ID en la ruta + cuerpo: Spring valida ambos juntos (validación de método). */
+	@PostMapping("/items/{id}")
+	Mono<String> itemWithBody(
+			@PathVariable @Pattern(regexp = "[a-z0-9-]+", message = "El identificador no es válido") String id,
+			@Valid @RequestBody Payload payload) {
+		return Mono.just(id);
+	}
+
 	@GetMapping("/numbers/{number}")
 	Mono<Integer> number(@PathVariable int number) {
 		return Mono.just(number);
