@@ -1,6 +1,13 @@
 spring:
   application:
     name: franchises-api
+  profiles:
+    default: dev
+
+app:
+  dynamodb:
+    region: us-east-1
+    table-name: franchises
 
 management:
   endpoints:

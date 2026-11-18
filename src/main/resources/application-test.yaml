@@ -1,0 +1,4 @@
+# Pruebas de integración contra el contenedor dynamodb-test (docker compose up dynamodb-test)
+app:
+  dynamodb:
+    endpoint: http://localhost:8001

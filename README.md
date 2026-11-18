@@ -16,9 +16,31 @@ Construida con Spring Boot 4 y WebFlux, con persistencia en Amazon DynamoDB.
 - JDK 21
 - Docker y Docker Compose
 
-## Compilar y ejecutar pruebas
+## Bases de datos locales
+
+`docker-compose.yml` levanta dos instancias de DynamoDB Local, una por entorno:
+
+| Servicio | Puerto | Perfil Spring | Datos |
+|---|---|---|---|
+| `dynamodb-dev` | 8000 | `dev` (por defecto) | Persistentes en el volumen `dynamodb-dev-data` |
+| `dynamodb-test` | 8001 | `test` | En memoria, se pierden al detener el contenedor |
 
 ```bash
+docker compose up -d                  # ambas bases
+docker compose up -d dynamodb-dev     # solo desarrollo
+docker compose up -d dynamodb-test    # solo pruebas
+docker compose down                   # detener (conserva los datos de dev)
+docker compose down -v                # detener y borrar los datos de dev
+```
+
+Las pruebas de integración se ejecutan siempre con el perfil `test`, por lo que nunca tocan la base de desarrollo.
+
+## Compilar y ejecutar pruebas
+
+Requiere `dynamodb-test` en ejecución:
+
+```bash
+docker compose up -d dynamodb-test
 ./mvnw verify
 ```
 
@@ -37,7 +59,10 @@ El comando ejecuta:
 
 ## Ejecutar la aplicación
 
+Con el perfil `dev` (por defecto), contra `dynamodb-dev`:
+
 ```bash
+docker compose up -d dynamodb-dev
 ./mvnw spring-boot:run
 ```
 

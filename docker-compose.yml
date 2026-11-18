@@ -1,0 +1,26 @@
+name: franchises-api
+
+services:
+  # Base de desarrollo: datos persistentes en un volumen
+  dynamodb-dev:
+    image: amazon/dynamodb-local:3.3.2
+    container_name: franchises-dynamodb-dev
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data
+    user: root
+    working_dir: /home/dynamodblocal
+    ports:
+      - "8000:8000"
+    volumes:
+      - dynamodb-dev-data:/home/dynamodblocal/data
+
+  # Base exclusiva para las pruebas: en memoria, se pierde al detenerla
+  dynamodb-test:
+    image: amazon/dynamodb-local:3.3.2
+    container_name: franchises-dynamodb-test
+    command: -jar DynamoDBLocal.jar -sharedDb -inMemory
+    working_dir: /home/dynamodblocal
+    ports:
+      - "8001:8000"
+
+volumes:
+  dynamodb-dev-data:
