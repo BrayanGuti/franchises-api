@@ -1,5 +1,8 @@
 name: franchises-api
 
+# Todos los puertos se publican solo en 127.0.0.1: DynamoDB Local acepta cualquier credencial
+# y dynamodb-admin no tiene autenticación, así que no deben quedar expuestos a la red.
+
 services:
   # Base de desarrollo: datos persistentes en un volumen
   dynamodb-dev:
@@ -9,7 +12,7 @@ services:
     user: root
     working_dir: /home/dynamodblocal
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - dynamodb-dev-data:/home/dynamodblocal/data
 
@@ -20,7 +23,24 @@ services:
     command: -jar DynamoDBLocal.jar -sharedDb -inMemory
     working_dir: /home/dynamodblocal
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
+
+  # Interfaz web para inspeccionar dynamodb-dev (tablas, ítems, claves PK/SK).
+  # Es una herramienta opcional: solo arranca con  docker compose --profile tools up -d dynamodb-admin
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:5.3.4
+    container_name: franchises-dynamodb-admin
+    profiles: [tools]
+    depends_on:
+      - dynamodb-dev
+    environment:
+      # Siempre explícito: sin endpoint, el cliente podría intentar conectarse a AWS real
+      DYNAMO_ENDPOINT: http://dynamodb-dev:8000
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+    ports:
+      - "127.0.0.1:8002:8001"
 
 volumes:
   dynamodb-dev-data:

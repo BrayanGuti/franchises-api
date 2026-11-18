@@ -72,22 +72,29 @@ En AWS la tabla la crea Terraform.
 
 ## Bases de datos locales
 
-`docker-compose.yml` levanta dos instancias de DynamoDB Local, una por entorno:
+`docker-compose.yml` levanta dos instancias de DynamoDB Local, una por entorno, y un inspector
+web para la base de desarrollo:
 
-| Servicio | Puerto | Perfil Spring | Datos |
+| Servicio | URL | Para qué | Datos |
 |---|---|---|---|
-| `dynamodb-dev` | 8000 | `dev` (por defecto) | Persistentes en el volumen `dynamodb-dev-data` |
-| `dynamodb-test` | 8001 | `test` | En memoria, se pierden al detener el contenedor |
+| `dynamodb-dev` | `127.0.0.1:8000` | Perfil `dev` (por defecto) | Persistentes en el volumen `dynamodb-dev-data` |
+| `dynamodb-test` | `127.0.0.1:8001` | Perfil `test` | En memoria, se pierden al detener el contenedor |
+| `dynamodb-admin` | <http://127.0.0.1:8002> | Ver tablas e ítems de `dynamodb-dev` (claves `PK`/`SK`) | Solo lee `dynamodb-dev` |
 
 ```bash
-docker compose up -d                  # ambas bases
-docker compose up -d dynamodb-dev     # solo desarrollo
-docker compose up -d dynamodb-test    # solo pruebas
-docker compose down                   # detener (conserva los datos de dev)
-docker compose down -v                # detener y borrar los datos de dev
+docker compose up -d                                   # ambas bases
+docker compose up -d dynamodb-dev                      # solo desarrollo
+docker compose up -d dynamodb-test                     # solo pruebas
+docker compose --profile tools up -d dynamodb-admin    # inspector (arranca también dynamodb-dev)
+docker compose --profile tools down                    # detener todo (conserva los datos de dev)
+docker compose --profile tools down -v                 # detener todo y borrar los datos de dev
 ```
 
-Las pruebas de integración se ejecutan siempre con el perfil `test`, por lo que nunca tocan la base de desarrollo.
+- Las pruebas de integración se ejecutan siempre con el perfil `test`, por lo que nunca tocan la base de desarrollo.
+- `dynamodb-admin` pertenece al perfil `tools`: no arranca con un `docker compose up` simple. Apunta
+  solo a `dynamodb-dev` y nunca a AWS.
+- Todos los puertos se publican solo en `127.0.0.1`: DynamoDB Local acepta cualquier credencial y
+  el inspector no tiene autenticación, así que no quedan expuestos a la red.
 
 ## Compilar y ejecutar pruebas
 
@@ -119,14 +126,15 @@ publica los reportes como artefacto y envía la cobertura a Coveralls.
 
 ## Ejecutar la aplicación
 
-Con el perfil `dev` (por defecto), contra `dynamodb-dev`:
+Con el perfil `dev` (por defecto), contra `dynamodb-dev`, con el inspector para ver los datos:
 
 ```bash
-docker compose up -d dynamodb-dev
+docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + el inspector
 ./mvnw spring-boot:run
 ```
 
-Estado de la aplicación: <http://localhost:8080/actuator/health>
+- Estado de la aplicación: <http://localhost:8080/actuator/health>
+- Inspector de la base: <http://127.0.0.1:8002>
 
 ## Endpoints
 
