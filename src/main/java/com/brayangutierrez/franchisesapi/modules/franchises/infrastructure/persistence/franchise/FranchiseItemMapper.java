@@ -6,7 +6,7 @@ import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persi
 /**
  * Convierte entre el modelo de dominio {@link Franchise} y su ítem en la tabla.
  */
-final class FranchiseItemMapper {
+public final class FranchiseItemMapper {
 
 	private FranchiseItemMapper() {
 	}
@@ -20,7 +20,7 @@ final class FranchiseItemMapper {
 		return item;
 	}
 
-	static Franchise toDomain(FranchiseItem item) {
+	public static Franchise toDomain(FranchiseItem item) {
 		return new Franchise(DynamoKeys.franchiseIdFrom(item.getPk()), item.getName());
 	}
 

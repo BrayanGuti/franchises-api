@@ -6,7 +6,7 @@ import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persi
 /**
  * Convierte entre el modelo de dominio {@link Branch} y su ítem en la tabla.
  */
-final class BranchItemMapper {
+public final class BranchItemMapper {
 
 	private BranchItemMapper() {
 	}
@@ -20,7 +20,7 @@ final class BranchItemMapper {
 		return item;
 	}
 
-	static Branch toDomain(BranchItem item) {
+	public static Branch toDomain(BranchItem item) {
 		return new Branch(
 				DynamoKeys.branchIdFrom(item.getSk()),
 				DynamoKeys.franchiseIdFrom(item.getPk()),

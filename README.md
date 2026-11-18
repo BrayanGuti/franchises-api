@@ -151,10 +151,15 @@ docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + 
 | `POST` | `/api/franchises/{franchiseId}/branches/{branchId}/products` | Agregar un producto a una sucursal | 201, 400, 404, 409 |
 | `DELETE` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}` | Eliminar un producto de una sucursal | 204, 400, 404, 409 |
 | `PATCH` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}/stock` | Modificar el stock de un producto | 200, 400, 404 |
+| `GET` | `/api/franchises/{franchiseId}/top-stock-products` | Producto con más stock por sucursal | 200, 400, 404 |
 
 - Los identificadores son UUID generados por el sistema; un ID con otro formato responde 400.
 - El nombre de un producto es único dentro de su sucursal, sin distinguir mayúsculas, tildes ni
   espacios sobrantes: "Café", "cafe" y "  CAFÉ " se consideran el mismo producto (409).
+- Producto con más stock por sucursal: se lee con una sola consulta fuertemente consistente
+  (refleja de inmediato cualquier cambio confirmado). Si hay empate se devuelven todos los
+  productos empatados; las sucursales sin productos se omiten; el orden es por sucursal y luego por
+  producto.
 
 Ejemplo:
 

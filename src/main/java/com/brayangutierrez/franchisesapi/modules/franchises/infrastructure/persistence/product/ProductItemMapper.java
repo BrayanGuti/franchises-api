@@ -6,7 +6,7 @@ import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persi
 /**
  * Convierte entre el modelo de dominio {@link Product} y sus ítems en la tabla.
  */
-final class ProductItemMapper {
+public final class ProductItemMapper {
 
 	private ProductItemMapper() {
 	}
@@ -30,7 +30,7 @@ final class ProductItemMapper {
 		return item;
 	}
 
-	static Product toDomain(ProductItem item) {
+	public static Product toDomain(ProductItem item) {
 		return new Product(
 				DynamoKeys.productIdFrom(item.getSk()),
 				DynamoKeys.franchiseIdFrom(item.getPk()),
