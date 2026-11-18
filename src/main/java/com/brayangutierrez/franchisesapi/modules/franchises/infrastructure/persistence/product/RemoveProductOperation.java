@@ -8,11 +8,9 @@ import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persi
 
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactDeleteItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 /**
@@ -59,41 +57,15 @@ class RemoveProductOperation {
 		TransactWriteItemsEnhancedRequest request = TransactWriteItemsEnhancedRequest.builder()
 				.addDeleteItem(tables.products(), TransactDeleteItemEnhancedRequest.builder()
 						.key(DynamoKeys.productKey(franchiseId, branchId, productId))
-						.conditionExpression(existsWithName(item.getName()))
+						.conditionExpression(ProductConditions.existsWithName(item.getName()))
 						.build())
 				.addDeleteItem(tables.productNames(), TransactDeleteItemEnhancedRequest.builder()
 						.key(DynamoKeys.productNameKey(franchiseId, branchId, item.getName()))
-						.conditionExpression(missingOrOwnedBy(productId))
+						.conditionExpression(ProductConditions.reservationMissingOrOwnedBy(productId))
 						.build())
 				.build();
 		return Mono.fromFuture(() -> tables.client().transactWriteItems(request))
 				.onErrorMap(TransactionCanceledException.class, ProductChangedException::new);
-	}
-
-	/** El producto sigue existiendo y con el mismo nombre que se leyó. */
-	private static Expression existsWithName(String name) {
-		return Expression.builder()
-				.expression("attribute_exists(PK) AND #name = :name")
-				.putExpressionName("#name", "name")
-				.putExpressionValue(":name", AttributeValue.fromS(name))
-				.build();
-	}
-
-	/** La reserva no existe o pertenece a este producto: nunca se borra la de otro. */
-	private static Expression missingOrOwnedBy(String productId) {
-		return Expression.builder()
-				.expression("attribute_not_exists(PK) OR productId = :productId")
-				.putExpressionValue(":productId", AttributeValue.fromS(productId))
-				.build();
-	}
-
-	/** El producto cambió entre la lectura y el borrado: hay que volver a leerlo. */
-	static final class ProductChangedException extends RuntimeException {
-
-		ProductChangedException(Throwable cause) {
-			super(cause);
-		}
-
 	}
 
 }

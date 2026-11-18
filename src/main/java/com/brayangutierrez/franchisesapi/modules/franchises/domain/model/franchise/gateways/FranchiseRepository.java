@@ -18,4 +18,10 @@ public interface FranchiseRepository {
 	/** Busca una franquicia por ID; vacío si no existe. */
 	Mono<Franchise> findById(String id);
 
+	/**
+	 * Cambia solo el nombre de una franquicia existente. Falla con {@code FRANCHISE_NOT_FOUND}
+	 * si no existe, sin crearla.
+	 */
+	Mono<Franchise> rename(String id, String name);
+
 }

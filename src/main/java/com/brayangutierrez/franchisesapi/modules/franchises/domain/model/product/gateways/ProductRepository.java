@@ -29,4 +29,12 @@ public interface ProductRepository {
 	 */
 	Mono<Product> updateStock(String franchiseId, String branchId, String productId, int stock);
 
+	/**
+	 * Cambia solo el nombre de un producto y mueve su reserva de nombre, de forma atómica.
+	 * Falla con {@code PRODUCT_NOT_FOUND} si el producto no existe, {@code BRANCH_NOT_FOUND} si la
+	 * sucursal no está activa y {@code PRODUCT_ALREADY_EXISTS} si otro producto de la sucursal ya
+	 * usa ese nombre.
+	 */
+	Mono<Product> rename(String franchiseId, String branchId, String productId, String name);
+
 }

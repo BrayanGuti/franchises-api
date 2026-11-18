@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.usecase.branch.AddBranchUseCase;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.addbranch.dto.AddBranchRequest;
-import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.addbranch.dto.BranchResponse;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.dto.BranchResponse;
 import com.brayangutierrez.franchisesapi.core.web.validation.ValidId;
 
 import io.swagger.v3.oas.annotations.Operation;

@@ -77,6 +77,47 @@ class BranchDynamoRepositoryIT {
 		assertThat(rawItem("F#" + franchiseId, "B#" + branchId).get("name").s()).isEqualTo("Original");
 	}
 
+	@Test
+	void renameChangesOnlyTheName() {
+		Branch branch = branchRepository.save(new Branch(uniqueId(), existingFranchise(), "Centro")).block();
+
+		StepVerifier.create(branchRepository.rename(branch.franchiseId(), branch.id(), "Norte"))
+				.expectNext(new Branch(branch.id(), branch.franchiseId(), "Norte"))
+				.verifyComplete();
+		assertThat(rawItem("F#" + branch.franchiseId(), "B#" + branch.id()).get("entityType").s()).isEqualTo("BRANCH");
+	}
+
+	@Test
+	void renamingAMissingBranchFailsAndDoesNotCreateIt() {
+		String franchiseId = existingFranchise();
+		String branchId = uniqueId();
+
+		StepVerifier.create(branchRepository.rename(franchiseId, branchId, "Fantasma"))
+				.expectErrorSatisfies(error -> assertThat(((BusinessException) error).error())
+						.isEqualTo(FranchiseError.BRANCH_NOT_FOUND))
+				.verify();
+		assertThat(rawItem("F#" + franchiseId, "B#" + branchId)).isEmpty();
+	}
+
+	@Test
+	void aBranchBeingDeletedCannotBeRenamed() {
+		Branch branch = branchRepository.save(new Branch(uniqueId(), existingFranchise(), "Centro")).block();
+		client.updateItem(request -> request
+				.tableName(properties.tableName())
+				.key(Map.of("PK", AttributeValue.fromS("F#" + branch.franchiseId()),
+						"SK", AttributeValue.fromS("B#" + branch.id())))
+				.updateExpression("SET #status = :deleting")
+				.expressionAttributeNames(Map.of("#status", "status"))
+				.expressionAttributeValues(Map.of(":deleting", AttributeValue.fromS("DELETING"))))
+				.join();
+
+		StepVerifier.create(branchRepository.rename(branch.franchiseId(), branch.id(), "Norte"))
+				.expectErrorSatisfies(error -> assertThat(((BusinessException) error).error())
+						.isEqualTo(FranchiseError.BRANCH_NOT_FOUND))
+				.verify();
+		assertThat(rawItem("F#" + branch.franchiseId(), "B#" + branch.id()).get("name").s()).isEqualTo("Centro");
+	}
+
 	private String existingFranchise() {
 		return franchiseRepository.save(new Franchise(uniqueId(), "Franquicia de prueba")).block().id();
 	}

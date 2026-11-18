@@ -71,6 +71,18 @@ class ProductFixtures {
 				.key(Map.of("PK", AttributeValue.fromS(pk), "SK", AttributeValue.fromS(sk)))).join();
 	}
 
+	/** Simula la marca que deja el borrado de una sucursal (status = DELETING). */
+	void markBranchDeleting(Branch branch) {
+		client.updateItem(request -> request
+				.tableName(tableName)
+				.key(Map.of("PK", AttributeValue.fromS("F#" + branch.franchiseId()),
+						"SK", AttributeValue.fromS("B#" + branch.id())))
+				.updateExpression("SET #status = :deleting")
+				.expressionAttributeNames(Map.of("#status", "status"))
+				.expressionAttributeValues(Map.of(":deleting", AttributeValue.fromS("DELETING"))))
+				.join();
+	}
+
 	static String uniqueId() {
 		return UUID.randomUUID().toString();
 	}

@@ -16,4 +16,10 @@ public interface BranchRepository {
 	 */
 	Mono<Branch> save(Branch branch);
 
+	/**
+	 * Cambia solo el nombre de una sucursal existente y activa. Falla con {@code BRANCH_NOT_FOUND}
+	 * si no existe (o se está eliminando), sin crearla.
+	 */
+	Mono<Branch> rename(String franchiseId, String branchId, String name);
+
 }

@@ -10,7 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.franchise.gateways.FranchiseRepository;
-import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.createfranchise.dto.FranchiseResponse;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.dto.FranchiseResponse;
 
 import reactor.test.StepVerifier;
 

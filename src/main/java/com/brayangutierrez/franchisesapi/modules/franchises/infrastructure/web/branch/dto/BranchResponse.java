@@ -1,4 +1,4 @@
-package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.addbranch.dto;
+package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.dto;
 
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.branch.Branch;
 

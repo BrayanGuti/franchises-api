@@ -1,4 +1,4 @@
-package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.createfranchise.dto;
+package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.dto;
 
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.franchise.Franchise;
 

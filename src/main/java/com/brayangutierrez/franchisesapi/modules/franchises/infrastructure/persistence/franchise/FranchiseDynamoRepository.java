@@ -7,6 +7,7 @@ import com.brayangutierrez.franchisesapi.core.domain.exception.BusinessException
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.franchise.Franchise;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.franchise.gateways.FranchiseRepository;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.DynamoKeys;
+import com.brayangutierrez.franchisesapi.integrations.dynamodb.DynamoConditions;
 import com.brayangutierrez.franchisesapi.integrations.dynamodb.config.DynamoDbProperties;
 
 import reactor.core.publisher.Mono;
@@ -15,7 +16,9 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.GetItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.IgnoreNullsMode;
 import software.amazon.awssdk.enhanced.dynamodb.model.PutItemEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 /**
@@ -58,6 +61,27 @@ public class FranchiseDynamoRepository implements FranchiseRepository {
 				.build();
 		return Mono.fromFuture(() -> table.getItem(request))
 				.map(FranchiseItemMapper::toDomain);
+	}
+
+	/**
+	 * {@code UpdateItem} solo sobre el nombre (los nulos del ítem parcial se ignoran) y condicionado
+	 * a que la franquicia exista: sin la condición, DynamoDB crearía el ítem.
+	 */
+	@Override
+	public Mono<Franchise> rename(String id, String name) {
+		FranchiseItem onlyName = new FranchiseItem();
+		onlyName.setPk(DynamoKeys.franchisePk(id));
+		onlyName.setSk(DynamoKeys.FRANCHISE_SK);
+		onlyName.setName(name);
+		UpdateItemEnhancedRequest<FranchiseItem> request = UpdateItemEnhancedRequest.builder(FranchiseItem.class)
+				.item(onlyName)
+				.ignoreNullsMode(IgnoreNullsMode.SCALAR_ONLY)
+				.conditionExpression(DynamoConditions.ITEM_EXISTS)
+				.build();
+		return Mono.fromFuture(() -> table.updateItem(request))
+				.map(FranchiseItemMapper::toDomain)
+				.onErrorMap(ConditionalCheckFailedException.class,
+						e -> new BusinessException(FranchiseError.FRANCHISE_NOT_FOUND, id));
 	}
 
 }

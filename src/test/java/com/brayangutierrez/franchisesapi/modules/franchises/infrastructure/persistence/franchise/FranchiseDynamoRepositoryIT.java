@@ -84,6 +84,29 @@ class FranchiseDynamoRepositoryIT {
 		assertThat(raw).doesNotContainKey("stock");
 	}
 
+	@Test
+	void renameChangesOnlyTheName() {
+		Franchise franchise = repository.save(new Franchise(uniqueId(), "Original")).block();
+
+		StepVerifier.create(repository.rename(franchise.id(), "Renombrada"))
+				.expectNext(new Franchise(franchise.id(), "Renombrada"))
+				.verifyComplete();
+		StepVerifier.create(repository.findById(franchise.id()))
+				.expectNext(new Franchise(franchise.id(), "Renombrada"))
+				.verifyComplete();
+	}
+
+	@Test
+	void renamingAMissingFranchiseFailsAndDoesNotCreateIt() {
+		String id = uniqueId();
+
+		StepVerifier.create(repository.rename(id, "Fantasma"))
+				.expectErrorSatisfies(error -> assertThat(((BusinessException) error).error())
+						.isEqualTo(FranchiseError.FRANCHISE_NOT_FOUND))
+				.verify();
+		StepVerifier.create(repository.findById(id)).verifyComplete();
+	}
+
 	private static String uniqueId() {
 		return UUID.randomUUID().toString();
 	}

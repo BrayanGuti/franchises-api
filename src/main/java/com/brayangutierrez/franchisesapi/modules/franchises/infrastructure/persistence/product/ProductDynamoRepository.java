@@ -17,12 +17,14 @@ public class ProductDynamoRepository implements ProductRepository {
 	private final AddProductOperation addProduct;
 	private final RemoveProductOperation removeProduct;
 	private final UpdateProductStockOperation updateStock;
+	private final RenameProductOperation renameProduct;
 
 	ProductDynamoRepository(AddProductOperation addProduct, RemoveProductOperation removeProduct,
-			UpdateProductStockOperation updateStock) {
+			UpdateProductStockOperation updateStock, RenameProductOperation renameProduct) {
 		this.addProduct = addProduct;
 		this.removeProduct = removeProduct;
 		this.updateStock = updateStock;
+		this.renameProduct = renameProduct;
 	}
 
 	@Override
@@ -38,6 +40,11 @@ public class ProductDynamoRepository implements ProductRepository {
 	@Override
 	public Mono<Product> updateStock(String franchiseId, String branchId, String productId, int stock) {
 		return updateStock.execute(franchiseId, branchId, productId, stock);
+	}
+
+	@Override
+	public Mono<Product> rename(String franchiseId, String branchId, String productId, String name) {
+		return renameProduct.execute(franchiseId, branchId, productId, name);
 	}
 
 }

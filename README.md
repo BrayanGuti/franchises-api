@@ -147,10 +147,13 @@ docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + 
 | Método | Ruta | Descripción | Respuestas |
 |---|---|---|---|
 | `POST` | `/api/franchises` | Agregar una franquicia | 201, 400 |
+| `PATCH` | `/api/franchises/{franchiseId}` | Actualizar el nombre de una franquicia | 200, 400, 404 |
 | `POST` | `/api/franchises/{franchiseId}/branches` | Agregar una sucursal a una franquicia | 201, 400, 404 |
+| `PATCH` | `/api/franchises/{franchiseId}/branches/{branchId}` | Actualizar el nombre de una sucursal | 200, 400, 404 |
 | `POST` | `/api/franchises/{franchiseId}/branches/{branchId}/products` | Agregar un producto a una sucursal | 201, 400, 404, 409 |
 | `DELETE` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}` | Eliminar un producto de una sucursal | 204, 400, 404, 409 |
 | `PATCH` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}/stock` | Modificar el stock de un producto | 200, 400, 404 |
+| `PATCH` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}` | Actualizar el nombre de un producto | 200, 400, 404, 409 |
 | `GET` | `/api/franchises/{franchiseId}/top-stock-products` | Producto con más stock por sucursal | 200, 400, 404 |
 
 - Los identificadores son UUID generados por el sistema; un ID con otro formato responde 400.

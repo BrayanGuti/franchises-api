@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.usecase.franchise.CreateFranchiseUseCase;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.createfranchise.dto.CreateFranchiseRequest;
-import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.createfranchise.dto.FranchiseResponse;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.dto.FranchiseResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

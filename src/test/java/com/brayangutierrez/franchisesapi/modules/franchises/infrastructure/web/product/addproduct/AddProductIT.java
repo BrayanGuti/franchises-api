@@ -10,8 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.addbranch.dto.BranchResponse;
-import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.createfranchise.dto.FranchiseResponse;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.branch.dto.BranchResponse;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.franchise.dto.FranchiseResponse;
 
 /**
  * Recorrido completo por HTTP contra dynamodb-test: franquicia, sucursal y sus productos.
