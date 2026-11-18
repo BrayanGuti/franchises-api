@@ -16,10 +16,13 @@ public class ProductDynamoRepository implements ProductRepository {
 
 	private final AddProductOperation addProduct;
 	private final RemoveProductOperation removeProduct;
+	private final UpdateProductStockOperation updateStock;
 
-	ProductDynamoRepository(AddProductOperation addProduct, RemoveProductOperation removeProduct) {
+	ProductDynamoRepository(AddProductOperation addProduct, RemoveProductOperation removeProduct,
+			UpdateProductStockOperation updateStock) {
 		this.addProduct = addProduct;
 		this.removeProduct = removeProduct;
+		this.updateStock = updateStock;
 	}
 
 	@Override
@@ -30,6 +33,11 @@ public class ProductDynamoRepository implements ProductRepository {
 	@Override
 	public Mono<Void> delete(String franchiseId, String branchId, String productId) {
 		return removeProduct.execute(franchiseId, branchId, productId);
+	}
+
+	@Override
+	public Mono<Product> updateStock(String franchiseId, String branchId, String productId, int stock) {
+		return updateStock.execute(franchiseId, branchId, productId, stock);
 	}
 
 }

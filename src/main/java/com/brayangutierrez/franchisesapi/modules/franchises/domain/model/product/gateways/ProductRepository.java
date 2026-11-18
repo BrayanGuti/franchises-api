@@ -23,4 +23,10 @@ public interface ProductRepository {
 	 */
 	Mono<Void> delete(String franchiseId, String branchId, String productId);
 
+	/**
+	 * Reemplaza el stock de un producto existente y devuelve el producto actualizado. Solo
+	 * modifica el stock. Falla con {@code PRODUCT_NOT_FOUND} si el producto no existe, sin crearlo.
+	 */
+	Mono<Product> updateStock(String franchiseId, String branchId, String productId, int stock);
+
 }

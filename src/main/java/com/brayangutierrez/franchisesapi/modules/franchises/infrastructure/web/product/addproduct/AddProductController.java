@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.brayangutierrez.franchisesapi.core.web.validation.ValidId;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.usecase.product.AddProductUseCase;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.product.addproduct.dto.AddProductRequest;
-import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.product.addproduct.dto.ProductResponse;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.product.dto.ProductResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

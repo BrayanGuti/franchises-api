@@ -1,4 +1,4 @@
-package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.product.addproduct.dto;
+package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.web.product.dto;
 
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.product.Product;
 
