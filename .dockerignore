@@ -1,0 +1,4 @@
+# Lista blanca: al contexto de build solo llega lo necesario para compilar.
+*
+!pom.xml
+!src/

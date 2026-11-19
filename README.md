@@ -13,6 +13,7 @@ Construida con Spring Boot 4 y WebFlux, con persistencia en Amazon DynamoDB.
 - AWS SDK v2 para DynamoDB
 - Maven
 - JaCoCo para cobertura de código
+- Docker y Docker Compose
 
 ## Arquitectura
 
@@ -175,9 +176,24 @@ Para ejecutar las pruebas de concurrencia y consistencia solas:
 
 Cada push y pull request a `main` ejecuta [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 levanta `dynamodb-test`, corre `./mvnw verify` (pruebas y umbral de cobertura del 80 %),
-publica los reportes como artefacto y envía la cobertura a Coveralls.
+publica los reportes como artefacto y envía la cobertura a Coveralls. En paralelo construye la
+imagen Docker y comprueba que no corra como root.
 
 ## Ejecutar la aplicación
+
+### Opción A: todo con Docker (no requiere Java instalado)
+
+Levanta las bases, el inspector y la API empaquetada en su imagen:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+```bash
+docker compose --profile app down        # detener todo (conserva los datos de dev)
+```
+
+### Opción B: la API con Maven (para desarrollar)
 
 Con el perfil `dev` (por defecto), contra `dynamodb-dev`, con el inspector para ver los datos:
 
@@ -186,8 +202,25 @@ docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + 
 ./mvnw spring-boot:run
 ```
 
+En ambos casos:
+
 - Estado de la aplicación: <http://localhost:8080/actuator/health>
+- Swagger: <http://localhost:8080/swagger-ui.html>
 - Inspector de la base: <http://127.0.0.1:8002>
+
+### La imagen Docker
+
+[`Dockerfile`](Dockerfile) de dos etapas:
+
+- **Compilación** con `maven:3.9.16-eclipse-temurin-21`: las dependencias se descargan en una capa
+  propia y con caché de `~/.m2`, así que un cambio de código no vuelve a descargarlas.
+- **Ejecución** con `eclipse-temurin:21.0.13_9-jre-noble` (solo JRE): la aplicación se separa en
+  capas de Spring Boot (dependencias, cargador y código) para que un cambio de código solo
+  reemplace la última.
+- Corre con un usuario sin privilegios (`app`), nunca como root.
+- `HEALTHCHECK` sobre `/actuator/health/readiness`: el contenedor queda `healthy` solo cuando la
+  aplicación terminó de arrancar.
+- Las pruebas no se ejecutan dentro del build de la imagen (necesitan `dynamodb-test`); las corre el CI.
 
 ## Endpoints
 

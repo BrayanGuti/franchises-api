@@ -26,11 +26,11 @@ services:
       - "127.0.0.1:8001:8000"
 
   # Interfaz web para inspeccionar dynamodb-dev (tablas, ítems, claves PK/SK).
-  # Es una herramienta opcional: solo arranca con  docker compose --profile tools up -d dynamodb-admin
+  # Arranca con el perfil tools (solo el inspector) o con el perfil app (todo el entorno).
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin:5.3.4
     container_name: franchises-dynamodb-admin
-    profiles: [tools]
+    profiles: [tools, app]
     depends_on:
       - dynamodb-dev
     environment:
@@ -41,6 +41,22 @@ services:
       AWS_SECRET_ACCESS_KEY: local
     ports:
       - "127.0.0.1:8002:8001"
+
+  # La API empaquetada con el Dockerfile, contra dynamodb-dev.
+  # Arranca todo el entorno con:  docker compose --profile app up -d --build
+  app:
+    build: .
+    image: franchises-api:local
+    container_name: franchises-api
+    profiles: [app]
+    depends_on:
+      - dynamodb-dev
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      # Dentro de la red de compose la base se llama dynamodb-dev, no localhost
+      APP_DYNAMODB_ENDPOINT: http://dynamodb-dev:8000
+    ports:
+      - "127.0.0.1:8080:8080"
 
 volumes:
   dynamodb-dev-data:
