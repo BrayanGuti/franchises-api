@@ -157,3 +157,18 @@ jobs:
           done
           echo "La API no respondió a tiempo"
           exit 1
+
+      # La app aplica las migraciones al arrancar y publica en /actuator/info la versión de datos que
+      # verificó; debe coincidir con la última migración del repositorio (V001__Baseline.java → V001).
+      - name: Comprobar la versión de los datos
+        env:
+          API_URL: ${{ steps.apply.outputs.api_url }}
+        run: |
+          expected=$(find src/main/java -name 'V[0-9][0-9][0-9]__*.java' -printf '%f\n' | cut -c1-4 | sort | tail -n 1)
+          actual=$(curl -fsS "${API_URL%/}/actuator/info" | jq -r '.migrations.version // empty')
+          echo "Versión esperada: ${expected:-ninguna}; versión en la API: ${actual:-ninguna}"
+          if [ -z "$expected" ] || [ "$actual" != "$expected" ]; then
+            echo "La versión de los datos no coincide con la del repositorio"
+            exit 1
+          fi
+          echo "### Datos en la versión \`$actual\`" >> "$GITHUB_STEP_SUMMARY"

@@ -9,6 +9,11 @@ app:
     region: us-east-1
     table-name: franchises
     create-table: false
+  # Migraciones de datos versionadas: se aplican al arrancar, antes de marcar la app como lista.
+  # lock-ttl debe superar la duración de la migración más larga.
+  migrations:
+    enabled: true
+    lock-ttl: 5m
 
 springdoc:
   api-docs:

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import com.brayangutierrez.franchisesapi.integrations.dynamodb.config.DynamoDbProperties;
@@ -30,7 +31,11 @@ import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
  */
 @Component
 @ConditionalOnBooleanProperty("app.dynamodb.create-table")
+@Order(DynamoTableInitializer.ORDER)
 public class DynamoTableInitializer implements ApplicationRunner {
+
+	/** Corre antes que cualquier otro arranque que use la tabla (por ejemplo, las migraciones). */
+	public static final int ORDER = 0;
 
 	private static final Logger log = LoggerFactory.getLogger(DynamoTableInitializer.class);
 	private static final Duration TIMEOUT = Duration.ofSeconds(30);

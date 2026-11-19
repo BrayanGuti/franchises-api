@@ -78,6 +78,32 @@ Lo que se confirmó antes de la marca se elimina con ella. Si el proceso se inte
 En los perfiles `dev` y `test` la aplicación crea la tabla al arrancar si no existe.
 En AWS la tabla la crea Terraform.
 
+### Migraciones de datos
+
+La **estructura** de la tabla (claves, índices, TTL) la define Terraform. Los cambios en el
+**formato de los datos** (por ejemplo, un atributo nuevo que hay que completar en los productos
+existentes) son migraciones versionadas al estilo de Flyway, que la aplicación aplica al arrancar:
+
+- Cada migración es una clase `V<3 dígitos>__<Descripcion>` que implementa `Migration`, en
+  `modules/franchises/infrastructure/persistence/migration/`. La primera, `V001__Baseline`, es la
+  línea base: representa el modelo de arriba y no transforma nada.
+- El historial vive en la propia tabla (`PK = SCHEMA#MIGRATIONS`, un ítem por versión). Solo se
+  aplican las versiones que no están registradas, en orden; cada una se registra apenas termina.
+- Un **lock distribuido** (`PutItem` condicional con vencimiento) garantiza que, si arrancan varias
+  instancias a la vez, una sola migre; las demás esperan. Si la instancia que migra muere, el lock
+  vence y otra retoma.
+- La instancia no se marca lista (`/actuator/health/readiness`) hasta terminar, así que no recibe
+  tráfico con los datos a medias. Si una migración falla, la app no arranca y ECS vuelve a la
+  versión anterior.
+- `/actuator/info` publica la versión verificada (`{"migrations":{"version":"V001"}}`) y el CD
+  comprueba que coincida con la última migración del repositorio.
+
+Para agregar una migración: crear `V002__Descripcion` en ese paquete como `@Component`. Debe ser
+**idempotente** (se puede repetir si se interrumpe; por ejemplo, escribir con
+`attribute_not_exists(nuevoAtributo)` y procesar por páginas) y seguir **expand/contract**: durante
+un despliegue conviven la versión vieja y la nueva de la app, así que primero se agrega lo nuevo y
+solo en una migración posterior se quita lo viejo. Una migración ya desplegada nunca se edita.
+
 ## Requisitos
 
 - JDK 21
@@ -184,7 +210,7 @@ imagen Docker y comprueba que no corra como root.
 | Evento | Qué hace | Rol de AWS |
 |---|---|---|
 | Pull request que toca `infra/` | `terraform fmt`, `validate` y `plan` (el plan queda en el resumen del job) | `plan`: solo lectura |
-| Push a `main`, cuando el CI termina en verde | Construye la imagen, la sube a ECR con el SHA del commit como tag, aplica Terraform con esa versión y comprueba que la API responda | `deploy`: solo la rama `main` |
+| Push a `main`, cuando el CI termina en verde | Construye la imagen, la sube a ECR con el SHA del commit como tag, aplica Terraform con esa versión y comprueba que la API responda con los datos en la última versión de migración | `deploy`: solo la rama `main` |
 
 - **Sin llaves guardadas**: GitHub Actions se autentica en AWS con OIDC. AWS solo entrega credenciales
   temporales si el token viene de este repositorio (y, para desplegar, de la rama `main`).
