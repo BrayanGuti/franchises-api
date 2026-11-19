@@ -172,12 +172,29 @@ Para ejecutar las pruebas de concurrencia y consistencia solas:
 > lecturas por defecto de DynamoDB no se puede reproducir en local. Por eso las lecturas que deben
 > reflejar lo último escrito usan `ConsistentRead` explícitamente.
 
-## Integración continua
+## Integración y despliegue continuos
 
-Cada push y pull request a `main` ejecuta [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+**CI** — cada push y pull request a `main` ejecuta [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
 levanta `dynamodb-test`, corre `./mvnw verify` (pruebas y umbral de cobertura del 80 %),
 publica los reportes como artefacto y envía la cobertura a Coveralls. En paralelo construye la
 imagen Docker y comprueba que no corra como root.
+
+**CD** — [`.github/workflows/cd.yml`](.github/workflows/cd.yml):
+
+| Evento | Qué hace | Rol de AWS |
+|---|---|---|
+| Pull request que toca `infra/` | `terraform fmt`, `validate` y `plan` (el plan queda en el resumen del job) | `plan`: solo lectura |
+| Push a `main`, cuando el CI termina en verde | Construye la imagen, la sube a ECR con el SHA del commit como tag, aplica Terraform con esa versión y comprueba que la API responda | `deploy`: solo la rama `main` |
+
+- **Sin llaves guardadas**: GitHub Actions se autentica en AWS con OIDC. AWS solo entrega credenciales
+  temporales si el token viene de este repositorio (y, para desplegar, de la rama `main`).
+- **Mínimo privilegio**: el rol de despliegue solo gestiona los recursos de este proyecto y no puede
+  leer datos de la tabla ni modificar los roles del propio pipeline (eso requiere un apply local).
+- **Despliegue seguro**: ECS Express despliega la versión nueva de forma gradual y vuelve sola a la
+  anterior si falla.
+
+Configuración única del repositorio (variables de GitHub Actions, salidas de `terraform output`):
+`AWS_PLAN_ROLE_ARN`, `AWS_DEPLOY_ROLE_ARN` y `TF_STATE_BUCKET`.
 
 ## Ejecutar la aplicación
 

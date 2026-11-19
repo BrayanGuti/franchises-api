@@ -1,0 +1,159 @@
+name: CD
+
+# - Pull request que toca la infraestructura: fmt, validate y plan de Terraform (rol de solo lectura).
+# - Push a main: cuando el CI termina en verde, construye y sube la imagen, aplica Terraform con
+#   esa versión y comprueba que la API responda (rol de despliegue, solo para main).
+# Las credenciales de AWS son temporales (OIDC); no hay llaves guardadas en el repositorio.
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['infra/**', '.github/workflows/cd.yml']
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.17.1
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  plan:
+    name: Plan de Terraform
+    # Los forks no reciben tokens OIDC: el plan solo corre en PR de ramas de este repositorio.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Formato
+        run: terraform fmt -check -recursive
+
+      - name: Credenciales de AWS (solo lectura)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Init
+        run: terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="region=${{ env.AWS_REGION }}"
+
+      - name: Validate
+        run: terraform validate
+
+      - name: Plan
+        run: |
+          # Se compara contra la imagen desplegada, para que el plan muestre solo cambios de infraestructura.
+          image_tag=$(terraform output -raw image_tag)
+          terraform plan -input=false -lock=false -no-color -var "image_tag=$image_tag" | tee plan.txt
+          {
+            echo '### Plan de Terraform'
+            echo '```'
+            tail -n 60 plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Desplegar en AWS
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Un despliegue a la vez y nunca se cancela a la mitad.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: ${{ steps.apply.outputs.api_url }}
+    env:
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Checkout del commit que pasó el CI
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Credenciales de AWS (despliegue)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login en ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2.1.7
+
+      # Los tags son inmutables: si esta versión ya se subió (reintento), no se vuelve a construir.
+      - name: Comprobar si la imagen ya existe
+        id: image
+        run: |
+          if aws ecr describe-images --repository-name franchises-api --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configurar Buildx
+        if: steps.image.outputs.exists == 'false'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Construir y subir la imagen
+        if: steps.image.outputs.exists == 'false'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/franchises-api:${{ env.IMAGE_TAG }}
+          cache-from: type=gha,scope=franchises-api
+          cache-to: type=gha,scope=franchises-api,mode=max
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Aplicar Terraform
+        id: apply
+        working-directory: infra
+        run: |
+          terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="region=${{ env.AWS_REGION }}"
+          terraform apply -input=false -auto-approve -no-color -var "image_tag=$IMAGE_TAG"
+          echo "api_url=$(terraform output -raw api_url)" >> "$GITHUB_OUTPUT"
+
+      - name: Comprobar que la API responde
+        env:
+          API_URL: ${{ steps.apply.outputs.api_url }}
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS "${API_URL%/}/actuator/health/readiness" | grep -q '"UP"'; then
+              echo "La API responde en $API_URL"
+              echo "### Desplegado: $API_URL (versión \`$IMAGE_TAG\`)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "La API no respondió a tiempo"
+          exit 1

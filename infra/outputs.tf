@@ -28,3 +28,23 @@ output "ecs_service_arn" {
   description = "Servicio de ECS Express."
   value       = aws_ecs_express_gateway_service.api.service_arn
 }
+
+output "image_tag" {
+  description = "Tag de la imagen desplegada; el plan de los pull requests lo reutiliza."
+  value       = var.image_tag
+}
+
+output "github_plan_role_arn" {
+  description = "Rol de solo lectura para el plan en los pull requests (variable AWS_PLAN_ROLE_ARN)."
+  value       = aws_iam_role.github_plan.arn
+}
+
+output "github_deploy_role_arn" {
+  description = "Rol de despliegue para la rama main (variable AWS_DEPLOY_ROLE_ARN)."
+  value       = aws_iam_role.github_deploy.arn
+}
+
+output "state_bucket" {
+  description = "Bucket del estado remoto (variable TF_STATE_BUCKET)."
+  value       = local.state_bucket
+}

@@ -16,6 +16,12 @@ variable "table_name" {
   default     = "franchises"
 }
 
+variable "github_repository" {
+  description = "Repositorio de GitHub (propietario/nombre) autorizado a usar los roles del pipeline."
+  type        = string
+  default     = "BrayanGuti/franchises-api"
+}
+
 variable "image_tag" {
   description = "Tag de la imagen a desplegar. El CD pasa el SHA del commit."
   type        = string

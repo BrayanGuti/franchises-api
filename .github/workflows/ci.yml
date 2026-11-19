@@ -83,8 +83,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Configurar Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Caché de capas en GitHub Actions: las dependencias de Maven no se vuelven a descargar en cada
+      # ejecución (Maven Central limita las descargas desde los runners compartidos con 429).
       - name: Construir la imagen (sin publicarla)
-        run: docker build --tag franchises-api:ci .
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          tags: franchises-api:ci
+          load: true
+          cache-from: type=gha,scope=franchises-api
+          cache-to: type=gha,scope=franchises-api,mode=max
 
       - name: Comprobar que la imagen no corre como root
         run: test "$(docker image inspect franchises-api:ci --format '{{.Config.User}}')" = "app"
