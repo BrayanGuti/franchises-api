@@ -2,12 +2,14 @@ package com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.pers
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.brayangutierrez.franchisesapi.integrations.dynamodb.config.DynamoDbProperties;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.branch.Branch;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.branch.gateways.BranchRepository;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.franchise.Franchise;
@@ -17,6 +19,8 @@ import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.product
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.product.gateways.ProductRepository;
 
 import reactor.test.StepVerifier;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * Lectura del inventario contra dynamodb-test.
@@ -35,6 +39,12 @@ class InventoryDynamoRepositoryIT {
 
 	@Autowired
 	private ProductRepository productRepository;
+
+	@Autowired
+	private DynamoDbAsyncClient client;
+
+	@Autowired
+	private DynamoDbProperties properties;
 
 	@Test
 	void readsTheFranchiseWithItsBranchesAndProductsButNotTheNameReservations() {
@@ -76,6 +86,26 @@ class InventoryDynamoRepositoryIT {
 					assertThat(inventory.branches()).isEmpty();
 					assertThat(inventory.products()).isEmpty();
 				})
+				.verifyComplete();
+	}
+
+	@Test
+	void aBranchBeingDeletedIsLeftOutTogetherWithItsProducts() {
+		Franchise franchise = franchiseRepository.save(new Franchise(uniqueId(), "Cafeterías")).block();
+		Branch centro = branchRepository.save(new Branch(uniqueId(), franchise.id(), "Centro")).block();
+		Branch norte = branchRepository.save(new Branch(uniqueId(), franchise.id(), "Norte")).block();
+		productRepository.save(new Product(uniqueId(), franchise.id(), centro.id(), "Café", 50)).block();
+		client.updateItem(request -> request
+				.tableName(properties.tableName())
+				.key(Map.of("PK", AttributeValue.fromS("F#" + franchise.id()),
+						"SK", AttributeValue.fromS("B#" + centro.id())))
+				.updateExpression("SET #status = :deleting")
+				.expressionAttributeNames(Map.of("#status", "status"))
+				.expressionAttributeValues(Map.of(":deleting", AttributeValue.fromS("DELETING"))))
+				.join();
+
+		StepVerifier.create(inventoryRepository.findByFranchiseId(franchise.id()))
+				.assertNext(inventory -> assertThat(inventory.branches()).containsExactly(norte))
 				.verifyComplete();
 	}
 

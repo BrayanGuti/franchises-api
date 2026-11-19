@@ -7,6 +7,7 @@ import com.brayangutierrez.franchisesapi.integrations.dynamodb.DynamoConditions;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.exception.FranchiseError;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.product.Product;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.DynamoKeys;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.branch.BranchConditions;
 
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.ConditionCheck;
@@ -15,9 +16,10 @@ import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhanced
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 /**
- * Alta de un producto en una sola transacción: la sucursal debe existir, el nombre no debe estar
- * reservado y el producto no debe existir. Si cualquiera falla, DynamoDB no aplica ninguna
- * escritura: no quedan productos huérfanos ni reservas sueltas.
+ * Alta de un producto en una sola transacción: la sucursal debe existir y estar activa (no en
+ * proceso de eliminación), el nombre no debe estar reservado y el producto no debe existir. Si
+ * cualquiera falla, DynamoDB no aplica ninguna escritura: no quedan productos huérfanos ni reservas
+ * sueltas.
  */
 @Component
 class AddProductOperation {
@@ -37,7 +39,7 @@ class AddProductOperation {
 		TransactWriteItemsEnhancedRequest request = TransactWriteItemsEnhancedRequest.builder()
 				.addConditionCheck(tables.products(), ConditionCheck.builder()
 						.key(DynamoKeys.branchKey(product.franchiseId(), product.branchId()))
-						.conditionExpression(DynamoConditions.ITEM_EXISTS)
+						.conditionExpression(BranchConditions.existsAndActive())
 						.build())
 				.addPutItem(tables.productNames(), TransactPutItemEnhancedRequest.builder(ProductNameItem.class)
 						.item(ProductItemMapper.toNameItem(product))

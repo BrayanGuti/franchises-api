@@ -68,6 +68,12 @@ mismo nombre, cada producto tiene una **reserva de nombre**: se crea en la misma
 producto con `attribute_not_exists`, así que si dos peticiones intentan el mismo nombre a la vez
 solo una gana y la otra recibe 409.
 
+**Eliminar una sucursal** sin dejar productos huérfanos, aunque lleguen peticiones mientras tanto:
+primero se marca la sucursal con `status = DELETING` (desde ese instante, agregar o renombrar
+productos responde 404), luego se borran todos sus productos y reservas, y al final la sucursal.
+Lo que se confirmó antes de la marca se elimina con ella. Si el proceso se interrumpe, repetir el
+`DELETE` lo completa. La marca vive en DynamoDB, así que funciona con varias instancias de la API.
+
 En los perfiles `dev` y `test` la aplicación crea la tabla al arrancar si no existe.
 En AWS la tabla la crea Terraform.
 
@@ -150,6 +156,7 @@ docker compose --profile tools up -d dynamodb-admin    # levanta dynamodb-dev + 
 | `PATCH` | `/api/franchises/{franchiseId}` | Actualizar el nombre de una franquicia | 200, 400, 404 |
 | `POST` | `/api/franchises/{franchiseId}/branches` | Agregar una sucursal a una franquicia | 201, 400, 404 |
 | `PATCH` | `/api/franchises/{franchiseId}/branches/{branchId}` | Actualizar el nombre de una sucursal | 200, 400, 404 |
+| `DELETE` | `/api/franchises/{franchiseId}/branches/{branchId}` | Eliminar una sucursal y sus productos | 204, 400, 404, 409 |
 | `POST` | `/api/franchises/{franchiseId}/branches/{branchId}/products` | Agregar un producto a una sucursal | 201, 400, 404, 409 |
 | `DELETE` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}` | Eliminar un producto de una sucursal | 204, 400, 404, 409 |
 | `PATCH` | `/api/franchises/{franchiseId}/branches/{branchId}/products/{productId}/stock` | Modificar el stock de un producto | 200, 400, 404 |

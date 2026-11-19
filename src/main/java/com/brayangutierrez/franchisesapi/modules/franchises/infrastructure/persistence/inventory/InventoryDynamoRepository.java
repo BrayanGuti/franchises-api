@@ -13,6 +13,7 @@ import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.invento
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.inventory.gateways.InventoryRepository;
 import com.brayangutierrez.franchisesapi.modules.franchises.domain.model.product.Product;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.DynamoKeys;
+import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.branch.BranchConditions;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.branch.BranchItem;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.branch.BranchItemMapper;
 import com.brayangutierrez.franchisesapi.modules.franchises.infrastructure.persistence.franchise.FranchiseItem;
@@ -75,11 +76,21 @@ public class InventoryDynamoRepository implements InventoryRepository {
 			AttributeValue entityType = item.get("entityType");
 			switch (entityType == null ? "" : entityType.s()) {
 				case FranchiseItem.ENTITY_TYPE -> franchise = FranchiseItemMapper.toDomain(FRANCHISE_SCHEMA.mapToItem(item));
-				case BranchItem.ENTITY_TYPE -> branches.add(BranchItemMapper.toDomain(BRANCH_SCHEMA.mapToItem(item)));
+				case BranchItem.ENTITY_TYPE -> addIfActive(BRANCH_SCHEMA.mapToItem(item));
 				case ProductItem.ENTITY_TYPE -> products.add(ProductItemMapper.toDomain(PRODUCT_SCHEMA.mapToItem(item)));
 				default -> {
 					// Reservas de nombre u otros ítems auxiliares: no forman parte del inventario.
 				}
+			}
+		}
+
+		/**
+		 * Una sucursal que se está eliminando ya no existe para el cliente; sus productos quedan
+		 * fuera porque el caso de uso descarta los productos de sucursales que no están aquí.
+		 */
+		private void addIfActive(BranchItem branch) {
+			if (!BranchConditions.DELETING.equals(branch.getStatus())) {
+				branches.add(BranchItemMapper.toDomain(branch));
 			}
 		}
 

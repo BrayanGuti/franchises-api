@@ -34,10 +34,18 @@ public class BranchDynamoRepository implements BranchRepository {
 
 	private final DynamoDbEnhancedAsyncClient enhancedClient;
 	private final DynamoDbAsyncTable<BranchItem> table;
+	private final RemoveBranchOperation removeBranch;
 
-	public BranchDynamoRepository(DynamoDbEnhancedAsyncClient enhancedClient, DynamoDbProperties properties) {
+	public BranchDynamoRepository(DynamoDbEnhancedAsyncClient enhancedClient, DynamoDbProperties properties,
+			RemoveBranchOperation removeBranch) {
 		this.enhancedClient = enhancedClient;
 		this.table = enhancedClient.table(properties.tableName(), TableSchema.fromBean(BranchItem.class));
+		this.removeBranch = removeBranch;
+	}
+
+	@Override
+	public Mono<Void> delete(String franchiseId, String branchId) {
+		return removeBranch.execute(franchiseId, branchId);
 	}
 
 	/**

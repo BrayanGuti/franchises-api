@@ -15,6 +15,8 @@ public enum FranchiseError implements BusinessErrorCode {
 	FRANCHISE_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "La franquicia '%s' ya existe"),
 	BRANCH_NOT_FOUND(BusinessErrorType.NOT_FOUND, "La sucursal '%s' no existe"),
 	BRANCH_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "La sucursal '%s' ya existe"),
+	BRANCH_DELETION_INCOMPLETE(BusinessErrorType.CONFLICT,
+			"La sucursal '%s' no terminó de eliminarse; vuelve a intentarlo"),
 	PRODUCT_NOT_FOUND(BusinessErrorType.NOT_FOUND, "El producto '%s' no existe"),
 	PRODUCT_ALREADY_EXISTS(BusinessErrorType.ALREADY_EXISTS, "El producto '%s' ya existe en la sucursal"),
 	PRODUCT_MODIFIED_CONCURRENTLY(BusinessErrorType.CONFLICT,

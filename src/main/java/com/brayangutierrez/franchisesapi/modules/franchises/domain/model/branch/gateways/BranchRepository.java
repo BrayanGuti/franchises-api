@@ -22,4 +22,12 @@ public interface BranchRepository {
 	 */
 	Mono<Branch> rename(String franchiseId, String branchId, String name);
 
+	/**
+	 * Elimina una sucursal con todos sus productos. Desde que empieza, la sucursal deja de aceptar
+	 * productos nuevos o renombrados; las escrituras ya confirmadas se eliminan con ella, así que
+	 * no quedan datos huérfanos. Es idempotente: si se interrumpe, repetirla la completa.
+	 * Falla con {@code BRANCH_NOT_FOUND} si la sucursal no existe.
+	 */
+	Mono<Void> delete(String franchiseId, String branchId);
+
 }
