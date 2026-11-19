@@ -130,6 +130,28 @@ El comando ejecuta:
 - Reporte de cobertura unificado en `target/site/jacoco/index.html`.
 - Verificación de cobertura mínima del 80 %: si no se cumple, el build falla.
 
+### Pruebas de concurrencia
+
+Las pruebas en `modules/franchises/concurrency` lanzan peticiones HTTP realmente simultáneas
+(hasta 50 en vuelo) contra la aplicación y verifican invariantes, no un orden concreto:
+
+| Escenario | Qué se verifica |
+|---|---|
+| 100 cambios de stock al mismo producto | Ninguno falla; el stock final es uno de los enviados; nombre y reserva intactos |
+| Cambios de stock simultáneos en 10 productos | Cada producto termina con un valor de su propio rango |
+| Renombrar mientras cambia el stock | Se conservan los dos cambios y la reserva del nombre se mueve |
+| 20 altas idénticas | Exactamente 1 × 201 y 19 × 409; un solo producto y una sola reserva |
+| Dos productos renombrados al mismo nombre | Uno gana (200) y el otro recibe 409 |
+| 10 eliminaciones del mismo producto | Exactamente 1 × 204 y 9 × 404; no queda nada |
+| Eliminar una sucursal mientras llegan altas, stock y renombres | Cada petición se completa o recibe 404; no quedan ítems huérfanos |
+| Eliminaciones simultáneas de la misma sucursal | Exactamente un 204 |
+
+Para ejecutarlas solas:
+
+```bash
+./mvnw verify -Dtest=ArchitectureTest -Dit.test='*ConcurrencyIT' -Djacoco.haltOnFailure=false
+```
+
 ## Integración continua
 
 Cada push y pull request a `main` ejecuta [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
