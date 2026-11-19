@@ -146,11 +146,30 @@ Las pruebas en `modules/franchises/concurrency` lanzan peticiones HTTP realmente
 | Eliminar una sucursal mientras llegan altas, stock y renombres | Cada petición se completa o recibe 404; no quedan ítems huérfanos |
 | Eliminaciones simultáneas de la misma sucursal | Exactamente un 204 |
 
-Para ejecutarlas solas:
+### Pruebas de consistencia de datos
+
+Verifican que bajo concurrencia nunca queden datos inconsistentes:
+
+| Escenario | Qué se verifica |
+|---|---|
+| Eliminar productos mientras llegan cambios de stock y de nombre | No queda ningún producto fantasma ni reserva huérfana |
+| Carga mezclada simultánea (altas, renombres, stock y bajas que compiten por los mismos nombres) | **Integridad referencial**: cada producto tiene exactamente su reserva, cada reserva apunta a un producto existente y no hay nombres duplicados |
+| Altas simultáneas en una sucursal inexistente | Todas responden 404 y no se escribe nada |
+| Escribir y leer de inmediato, 20 veces seguidas | Cada lectura refleja la escritura anterior (lectura fuertemente consistente) |
+| Renombrar y eliminar | Los nombres liberados se pueden volver a usar |
+
+El verificador de integridad tiene sus propias pruebas que rompen los datos a propósito, para
+garantizar que detecta las inconsistencias.
+
+Para ejecutar las pruebas de concurrencia y consistencia solas:
 
 ```bash
-./mvnw verify -Dtest=ArchitectureTest -Dit.test='*ConcurrencyIT' -Djacoco.haltOnFailure=false
+./mvnw verify -Dtest=ArchitectureTest -Dit.test='*ConcurrencyIT,*ConsistencyIT' -Djacoco.haltOnFailure=false
 ```
+
+> DynamoDB Local siempre responde con consistencia fuerte, así que la consistencia eventual de las
+> lecturas por defecto de DynamoDB no se puede reproducir en local. Por eso las lecturas que deben
+> reflejar lo último escrito usan `ConsistentRead` explícitamente.
 
 ## Integración continua
 

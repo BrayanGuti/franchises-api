@@ -44,6 +44,15 @@ class RawTable {
 				.toList();
 	}
 
+	void put(Map<String, AttributeValue> item) {
+		client.putItem(request -> request.tableName(tableName).item(item)).join();
+	}
+
+	void delete(String pk, String sk) {
+		client.deleteItem(request -> request.tableName(tableName)
+				.key(Map.of("PK", AttributeValue.fromS(pk), "SK", AttributeValue.fromS(sk)))).join();
+	}
+
 	Map<String, AttributeValue> product(String franchiseId, String branchId, String productId) {
 		return client.getItem(request -> request
 				.tableName(tableName)
