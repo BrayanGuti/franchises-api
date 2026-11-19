@@ -222,6 +222,78 @@ En ambos casos:
   aplicación terminó de arrancar.
 - Las pruebas no se ejecutan dentro del build de la imagen (necesitan `dynamodb-test`); las corre el CI.
 
+## Infraestructura en AWS (Terraform)
+
+La infraestructura está definida como código en [`infra/`](infra), en una sola carpeta:
+
+| Archivo | Contenido |
+|---|---|
+| `main.tf` | Tabla de DynamoDB, repositorio de ECR y el servicio en **ECS Express Mode** |
+| `iam.tf` | Los tres roles IAM de mínimo privilegio |
+| `variables.tf`, `outputs.tf`, `versions.tf` | Parámetros, salidas (la URL pública) y versiones; estado remoto en S3 |
+
+**ECS Express Mode** ejecuta la imagen en Fargate y AWS administra por nosotros el balanceador de
+carga, los grupos de seguridad y el certificado HTTPS, en la VPC por defecto de la cuenta. Entrega
+una URL pública estable con HTTPS (`https://<servicio>.ecs.<región>.on.aws`) y despliegues
+graduales con vuelta atrás automática si la versión nueva falla.
+
+Recursos:
+
+- **DynamoDB**: tabla única `PK`/`SK`, on-demand, cifrada y con recuperación a un punto en el tiempo.
+- **ECR**: tags inmutables (cada versión es el SHA de un commit), escaneo de vulnerabilidades y solo
+  las últimas 10 imágenes.
+- **IAM de mínimo privilegio**:
+  - Rol de la tarea (la aplicación): solo `GetItem`, `PutItem`, `UpdateItem`, `DeleteItem`, `Query` y
+    `ConditionCheckItem`, y solo sobre su tabla. No puede crear ni borrar tablas.
+  - Rol de ejecución: solo descarga la imagen de su repositorio y escribe en su grupo de logs.
+  - Rol de infraestructura: el que usa ECS Express para administrar el balanceador y la red.
+- Sin llaves en el código: en AWS la aplicación usa las credenciales temporales del rol de la tarea.
+
+### Desplegar desde un entorno local
+
+Requisitos: Terraform 1.10 o superior, Docker y la CLI de AWS con credenciales configuradas.
+La cuenta debe tener la VPC por defecto en la región (viene creada en las cuentas de AWS).
+
+```bash
+# 1. Bucket para el estado de Terraform (una sola vez)
+ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+BUCKET="franchises-api-tfstate-$ACCOUNT"
+aws s3api create-bucket --bucket "$BUCKET" --region us-east-1
+aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
+
+# 2. Inicializar Terraform con ese bucket
+terraform -chdir=infra init -backend-config="bucket=$BUCKET" -backend-config="region=us-east-1"
+
+# 3. Crear el repositorio de imágenes y subir la imagen
+terraform -chdir=infra apply -target=aws_ecr_repository.this -var image_tag=v1
+REPO=$(terraform -chdir=infra output -raw ecr_repository_url)
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin "${REPO%/*}"
+docker build -t "$REPO:v1" . && docker push "$REPO:v1"
+
+# 4. Crear el resto de la infraestructura con esa imagen
+terraform -chdir=infra apply -var image_tag=v1
+terraform -chdir=infra output api_url
+```
+
+El estado vive en S3 para que el CD (GitHub Actions) y una máquina local trabajen sobre el mismo
+estado; cada ejecución del CI empieza en una máquina vacía y, sin estado compartido, Terraform no
+sabría qué recursos ya existen.
+
+### Costo y cómo destruir todo
+
+Costo aproximado en `us-east-1` con una tarea encendida todo el mes: balanceador de carga ~16 USD,
+Fargate (0,25 vCPU y 0,5 GB) ~9 USD y direcciones IPv4 públicas ~4 USD, unos **30 USD al mes**.
+ECS Express Mode no tiene cargo adicional; DynamoDB on-demand, ECR y los logs cuestan centavos con
+el tráfico de una prueba.
+
+Para no seguir pagando, al terminar:
+
+```bash
+terraform -chdir=infra destroy -var image_tag=v1
+```
+
+El bucket del estado cuesta centavos; se puede conservar o borrar después de vaciarlo.
+
 ## Endpoints
 
 | Método | Ruta | Descripción | Respuestas |

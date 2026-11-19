@@ -52,6 +52,15 @@ class DynamoDbProfilesTest {
 		assertThat(properties.createTable()).isFalse();
 	}
 
+	@Test
+	void prodProfileUsesAwsAndNeverCreatesTheTable() throws IOException {
+		DynamoDbProperties properties = bindWithProfile("prod");
+
+		assertThat(properties.endpoint()).isNull();
+		assertThat(properties.createTable()).isFalse();
+		assertThat(properties.tableName()).isEqualTo("franchises");
+	}
+
 	private DynamoDbProperties bindWithProfile(String profile) throws IOException {
 		return bind(environmentWith("application-" + profile + ".yaml", "application.yaml"));
 	}

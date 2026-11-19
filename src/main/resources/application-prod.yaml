@@ -1,0 +1,6 @@
+# AWS (ECS Fargate). Sin endpoint: el SDK usa el endpoint regional y las credenciales del rol de
+# la tarea. La tabla la crea Terraform, no la aplicación. La región y el nombre de la tabla llegan
+# por variables de entorno (APP_DYNAMODB_REGION, APP_DYNAMODB_TABLE_NAME) desde la definición de tarea.
+app:
+  dynamodb:
+    create-table: false

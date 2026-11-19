@@ -1,0 +1,4 @@
+# Copiar a backend.hcl (no se versiona) con el bucket del estado remoto:
+#   terraform -chdir=infra init -backend-config=backend.hcl
+bucket = "franchises-api-tfstate-<ID_DE_CUENTA>"
+region = "us-east-1"
