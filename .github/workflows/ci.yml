@@ -99,3 +99,16 @@ jobs:
 
       - name: Comprobar que la imagen no corre como root
         run: test "$(docker image inspect franchises-api:ci --format '{{.Config.User}}')" = "app"
+
+  scripts:
+    name: Scripts de desarrollo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # ShellCheck viene instalado en los runners de Ubuntu; la configuración está en .shellcheckrc.
+      - name: ShellCheck
+        run: shellcheck --external-sources scripts/*.sh scripts/lib/*.sh

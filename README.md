@@ -106,8 +106,10 @@ solo en una migración posterior se quita lo viejo. Una migración ya desplegada
 
 ## Requisitos
 
-- Docker y Docker Compose
-- JDK 21 (no hace falta si la API corre en Docker)
+- Docker y Docker Compose (con esto basta para correr todo: la API se compila dentro de su imagen)
+- JDK 21 solo para correr la API sin Docker (`scripts/dev.sh --maven`) o las pruebas (`scripts/test.sh`).
+  Maven usa el JDK de `JAVA_HOME` (o el `java` del PATH si no está definido); si hay varios JDK
+  instalados, `JAVA_HOME` debe apuntar al 21.
 - En Windows, los scripts se ejecutan con Git Bash (viene con Git para Windows) o WSL
 
 ## Scripts de desarrollo
@@ -116,18 +118,24 @@ Los tres flujos habituales en un comando cada uno (Linux, macOS y Windows con Gi
 
 | Script | Qué hace |
 |---|---|
-| `scripts/dev.sh` | Levanta `dynamodb-dev`, el inspector y la API en perfil `dev`; cuando la API está lista abre Swagger y el inspector en el navegador |
+| `scripts/dev.sh` | Levanta `dynamodb-dev`, el inspector y la API (en Docker) en perfil `dev`; cuando la API está lista muestra y abre Swagger y el inspector, y deja los logs de la API en la terminal. La primera vez carga datos de ejemplo |
 | `scripts/test.sh` | Levanta `dynamodb-test`, ejecuta `./mvnw verify`, muestra el resumen de cobertura y abre el reporte |
 | `scripts/stop.sh` | Detiene todos los contenedores; los datos de desarrollo se conservan |
 
 ```bash
-scripts/dev.sh                 # la API con Maven en esta terminal (Ctrl+C la detiene)
-scripts/dev.sh --docker        # la API en su contenedor (no requiere Java)
+scripts/dev.sh                 # todo en Docker (no requiere Java); Ctrl+C deja de mostrar los logs
+scripts/dev.sh --maven         # la API con Maven, sin Docker para la API (requiere el JDK 21)
 scripts/test.sh                # todas las pruebas + cobertura
 scripts/test.sh -Dit.test='*ConcurrencyIT' -Djacoco.haltOnFailure=false   # argumentos extra para Maven
 scripts/stop.sh                # detener todo
 scripts/stop.sh --clean        # detener todo y borrar los datos de dynamodb-dev (pide confirmación)
 ```
+
+**Datos de ejemplo**: si la base de desarrollo es nueva (primera ejecución o después de
+`scripts/stop.sh --clean`), `dev.sh` crea por la API dos franquicias con tres sucursales cada una;
+cada sucursal tiene un producto estrella, con mucho más stock que los demás, que es el que devuelve
+el top-stock. Al terminar muestra las URL del top-stock de cada franquicia. `--seed` los carga de
+nuevo (con IDs nuevos, sin borrar los anteriores) y `--no-seed` lo evita.
 
 Todos aceptan `--help`, y `--no-browser` (o `NO_BROWSER=1`) evita abrir el navegador. Antes de
 empezar comprueban que Docker esté corriendo y, si hace falta, que Java sea 21 o superior, con un

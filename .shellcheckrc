@@ -1,0 +1,2 @@
+# Los scripts cargan scripts/lib/common.sh con una ruta relativa a su propia carpeta.
+source-path=SCRIPTDIR
