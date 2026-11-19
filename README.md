@@ -27,6 +27,10 @@ desplegada en AWS (ECS) con Terraform y GitHub Actions.
 10. [Modelo de datos](#modelo-de-datos)
 11. [Estructura del repositorio](#estructura-del-repositorio)
 
+Las decisiones de diseño y las alternativas evaluadas están en
+[`docs/DISENO.md`](docs/DISENO.md), con un registro corto por decisión en
+[`docs/decisiones/`](docs/decisiones).
+
 ## Inicio rápido
 
 Solo necesitas **Docker** y **Git** (en Windows, usa la terminal **Git Bash**, que viene con Git):
