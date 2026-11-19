@@ -16,10 +16,21 @@ variable "table_name" {
   default     = "franchises"
 }
 
-variable "github_repository" {
-  description = "Repositorio de GitHub (propietario/nombre) autorizado a usar los roles del pipeline."
+variable "github_oidc_subject_prefix" {
+  description = <<-EOT
+    Prefijo del claim "sub" de los tokens OIDC de GitHub para este repositorio: solo ese repositorio
+    puede usar los roles del pipeline. GitHub lo firma en formato inmutable, con los IDs numéricos del
+    propietario y del repositorio (repo:propietario@id/nombre@id), así que un repositorio borrado y
+    vuelto a crear con el mismo nombre no hereda el acceso. Se obtiene con:
+      gh api repos/<propietario>/<repositorio>/actions/oidc/customization/sub --jq .sub_claim_prefix
+  EOT
   type        = string
-  default     = "BrayanGuti/franchises-api"
+  default     = "repo:BrayanGuti@99362850/franchises-api@1463144534"
+
+  validation {
+    condition     = startswith(var.github_oidc_subject_prefix, "repo:")
+    error_message = "El prefijo debe empezar por \"repo:\"."
+  }
 }
 
 variable "image_tag" {

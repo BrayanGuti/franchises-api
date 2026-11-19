@@ -11,7 +11,7 @@ data "aws_caller_identity" "current" {}
 locals {
   account_id   = data.aws_caller_identity.current.account_id
   state_bucket = "${var.project}-tfstate-${local.account_id}"
-  oidc_subject = "repo:${var.github_repository}"
+  oidc_subject = var.github_oidc_subject_prefix
   app_roles = [
     aws_iam_role.execution.arn,
     aws_iam_role.task.arn,
@@ -98,10 +98,13 @@ data "aws_iam_policy_document" "assume_github_deploy" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
+    # El job de despliegue usa el environment "production", así que GitHub firma el token con
+    # "environment:production" en lugar de la rama. La restricción a main la aplica el environment
+    # (Deployment branches: solo main).
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["${local.oidc_subject}:ref:refs/heads/main"]
+      values   = ["${local.oidc_subject}:environment:production"]
     }
   }
 }

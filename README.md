@@ -106,8 +106,33 @@ solo en una migración posterior se quita lo viejo. Una migración ya desplegada
 
 ## Requisitos
 
-- JDK 21
 - Docker y Docker Compose
+- JDK 21 (no hace falta si la API corre en Docker)
+- En Windows, los scripts se ejecutan con Git Bash (viene con Git para Windows) o WSL
+
+## Scripts de desarrollo
+
+Los tres flujos habituales en un comando cada uno (Linux, macOS y Windows con Git Bash o WSL):
+
+| Script | Qué hace |
+|---|---|
+| `scripts/dev.sh` | Levanta `dynamodb-dev`, el inspector y la API en perfil `dev`; cuando la API está lista abre Swagger y el inspector en el navegador |
+| `scripts/test.sh` | Levanta `dynamodb-test`, ejecuta `./mvnw verify`, muestra el resumen de cobertura y abre el reporte |
+| `scripts/stop.sh` | Detiene todos los contenedores; los datos de desarrollo se conservan |
+
+```bash
+scripts/dev.sh                 # la API con Maven en esta terminal (Ctrl+C la detiene)
+scripts/dev.sh --docker        # la API en su contenedor (no requiere Java)
+scripts/test.sh                # todas las pruebas + cobertura
+scripts/test.sh -Dit.test='*ConcurrencyIT' -Djacoco.haltOnFailure=false   # argumentos extra para Maven
+scripts/stop.sh                # detener todo
+scripts/stop.sh --clean        # detener todo y borrar los datos de dynamodb-dev (pide confirmación)
+```
+
+Todos aceptan `--help`, y `--no-browser` (o `NO_BROWSER=1`) evita abrir el navegador. Antes de
+empezar comprueban que Docker esté corriendo y, si hace falta, que Java sea 21 o superior, con un
+mensaje claro si algo falta. Las secciones siguientes explican lo que hacen por dentro, por si se
+prefiere ejecutar cada paso a mano.
 
 ## Bases de datos locales
 
@@ -213,7 +238,8 @@ imagen Docker y comprueba que no corra como root.
 | Push a `main`, cuando el CI termina en verde | Construye la imagen, la sube a ECR con el SHA del commit como tag, aplica Terraform con esa versión y comprueba que la API responda con los datos en la última versión de migración | `deploy`: solo la rama `main` |
 
 - **Sin llaves guardadas**: GitHub Actions se autentica en AWS con OIDC. AWS solo entrega credenciales
-  temporales si el token viene de este repositorio (y, para desplegar, de la rama `main`).
+  temporales si el token viene de este repositorio; para desplegar, además, del environment
+  `production` de GitHub, que solo acepta la rama `main` (Settings → Environments → Deployment branches).
 - **Mínimo privilegio**: el rol de despliegue solo gestiona los recursos de este proyecto y no puede
   leer datos de la tabla ni modificar los roles del propio pipeline (eso requiere un apply local).
 - **Despliegue seguro**: ECS Express despliega la versión nueva de forma gradual y vuelve sola a la
